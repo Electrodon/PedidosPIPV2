@@ -133,12 +133,16 @@
 
       // ── Ocultar splash cuando React esté listo ────────────────────────
       window.hideSplash = () => {
-        const splash = document.getElementById('splash');
-        if (splash) {
-          splash.classList.add('hidden');
-          setTimeout(() => splash.remove(), 400);
-        }
-      };
+  const splash = document.getElementById('splash');
+  if (splash) {
+    splash.classList.add('hidden');
+    setTimeout(() => splash.remove(), 400);
+  }
+};
+// Ocultar splash automáticamente después de 3 segundos como fallback
+setTimeout(() => {
+  if (window.hideSplash) window.hideSplash();
+}, 3000);
     </script>
   </body>
 </html>
