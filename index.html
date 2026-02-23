@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <!-- ── PWA Esencial ───────────────────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#f97316" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- ── iOS / Safari PWA ──────────────────────────────────────────── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RapidoYa" />
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+
+    <!-- ── Splash screens iOS (opcional pero recomendado) ────────────── -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+    <!-- ── SEO y compartir ───────────────────────────────────────────── -->
+    <title>RapidoYa — Tu comida favorita, en tu puerta</title>
+    <meta name="description" content="Pedí comida de los mejores restaurantes de tu zona. Seguí tu pedido en tiempo real." />
+    <meta name="keywords" content="delivery, comida, restaurantes, pedidos, Argentina" />
+
+    <!-- ── Open Graph (WhatsApp, redes sociales) ─────────────────────── -->
+    <meta property="og:title" content="RapidoYa — Delivery de comida" />
+    <meta property="og:description" content="Pedí comida de los mejores restaurantes de tu zona." />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:type" content="website" />
+
+    <!-- ── Favicons ──────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+    <link rel="shortcut icon" href="/icons/icon-72x72.png" />
+
+    <!-- ── Optimizaciones de rendimiento ─────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+
+    <style>
+      /* Pantalla de carga inicial antes de que React monte */
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: sans-serif;
+        transition: opacity 0.4s ease;
+      }
+      #splash.hidden { opacity: 0; pointer-events: none; }
+      #splash-icon { font-size: 72px; animation: bounce 1s ease-in-out infinite; }
+      #splash-title { color: #f97316; font-size: 32px; font-weight: 900; margin-top: 12px; letter-spacing: -1px; }
+      #splash-sub { color: #475569; font-size: 14px; margin-top: 8px; }
+      @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+      /* Evitar flash blanco en iOS */
+      body { background: #0f172a; margin: 0; padding: 0; }
+
+      /* Safe area para iPhone con notch */
+      #root {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Splash screen -->
+    <div id="splash">
+      <div id="splash-icon">🍽️</div>
+      <div id="splash-title">RapidoYa</div>
+      <div id="splash-sub">Tu comida favorita, en tu puerta</div>
+    </div>
+
+    <!-- React root -->
+    <div id="root"></div>
+
+    <script>
+      // ── Registrar Service Worker ──────────────────────────────────────
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            const reg = await navigator.serviceWorker.register('/service-worker.js');
+            console.log('[PWA] Service Worker registrado:', reg.scope);
+
+            // Detectar actualizaciones disponibles
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Notificar al usuario que hay una nueva versión
+                  if (confirm('🚀 Nueva versión disponible. ¿Actualizar ahora?')) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                  }
+                }
+              });
+            });
+          } catch (err) {
+            console.warn('[PWA] Service Worker no pudo registrarse:', err);
+          }
+        });
+      }
+
+      // ── Banner de instalación (Android/Desktop) ───────────────────────
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Mostrar nuestro propio botón de instalación
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      });
+
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App instalada exitosamente');
+        deferredPrompt = null;
+      });
+
+      // Función global para instalar desde React
+      window.installPWA = async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log('[PWA] Usuario eligió:', outcome);
+          deferredPrompt = null;
+        }
+      };
+
+      // ── Ocultar splash cuando React esté listo ────────────────────────
+      window.hideSplash = () => {
+        const splash = document.getElementById('splash');
+        if (splash) {
+          splash.classList.add('hidden');
+          setTimeout(() => splash.remove(), 400);
+        }
+      };
+    </script>
+  </body>
+</html>
