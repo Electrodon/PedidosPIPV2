@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
+
+// ─── ADMIN EMAIL ─────────────────────────────────────────────────────────────
+const ADMIN_EMAIL = "admin@rapidoya.com"; // Cambiá esto por tu email
 
 // ─── ESTILOS COMPARTIDOS ──────────────────────────────────────────────────────
 const S = {
@@ -717,6 +720,9 @@ function DeliveryView({ user, profile, onLogout }) {
   const [myDeliveries, setMyDeliveries] = useState([]);
   const [feeInput, setFeeInput] = useState({});
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('orders');
+  const [mpLink, setMpLink] = useState(profile?.mp_link || '');
+  const [savingMp, setSavingMp] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -746,6 +752,13 @@ function DeliveryView({ user, profile, onLogout }) {
       ).subscribe();
     return () => supabase.removeChannel(channel);
   }, [user.id]);
+
+  const saveMpLink = async () => {
+    setSavingMp(true);
+    await supabase.from("profiles").update({ mp_link: mpLink }).eq("id", user.id);
+    setSavingMp(false);
+    alert("✅ Link guardado correctamente");
+  };
 
   const acceptDelivery = async (order) => {
     const fee = parseInt(feeInput[order.id]) || 500;
@@ -870,6 +883,142 @@ function DeliveryView({ user, profile, onLogout }) {
   );
 }
 
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  PANEL ADMIN
+// ──────────────────────────────────────────────────────────────────────────────
+function AdminView({ onLogout }) {
+  const [tab, setTab] = useState("restaurants");
+  const [restaurants, setRestaurants] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: rests } = await supabase.from("restaurants").select("*, profiles(name, phone)").order("created_at", { ascending: false });
+      const { data: profs } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      setRestaurants(rests || []);
+      setUsers(profs || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const approveRestaurant = async (id, approved) => {
+    await supabase.from("restaurants").update({ approved }).eq("id", id);
+    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved } : r));
+  };
+
+  const pending = restaurants.filter(r => !r.approved);
+  const approved = restaurants.filter(r => r.approved);
+
+  return (
+    <div style={{ fontFamily: "'Nunito', sans-serif", color: "#f1f5f9", minHeight: "100%", background: "#0f172a" }}>
+      <div style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", borderBottom: "2px solid #f97316", padding: "16px 20px", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: "#f97316" }}>⚙️ Panel Admin · RapidoYa</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>Control total de la plataforma</div>
+          </div>
+          <button onClick={onLogout} style={S.btn("#334155")}>Salir</button>
+        </div>
+      </div>
+      <div style={{ maxWidth: 700, margin: "0 auto", padding: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Usuarios", count: users.length, color: "#f97316" },
+            { label: "Pendientes", count: pending.length, color: "#f59e0b" },
+            { label: "Aprobados", count: approved.length, color: "#10b981" },
+            { label: "Repartidores", count: users.filter(u => u.role === "delivery").length, color: "#0891b2" },
+          ].map(s => (
+            <div key={s.label} style={{ background: "#1e293b", borderRadius: 14, padding: 14, textAlign: "center", border: `1px solid ${s.color}33` }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.count}</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {[["restaurants","🍽️ Restaurantes"],["users","👥 Usuarios"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: tab === key ? "linear-gradient(135deg,#f97316,#ea580c)" : "#1e293b", color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
+          ))}
+        </div>
+        {loading ? <Spinner /> : (
+          <>
+            {tab === "restaurants" && (
+              <>
+                {pending.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>⏳ Esperando aprobación</div>
+                    {pending.map(r => (
+                      <div key={r.id} style={{ ...S.card, border: "1px solid #f59e0b55" }}>
+                        <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14 }}>
+                          <div style={{ fontSize: 40 }}>{r.image}</div>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: 17 }}>{r.name}</div>
+                            <div style={{ fontSize: 13, color: "#94a3b8" }}>{r.category} · {r.delivery_time}</div>
+                            <div style={{ fontSize: 12, color: "#64748b" }}>Dueño: {r.profiles?.name} · {r.profiles?.phone}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => approveRestaurant(r.id, true)} style={{ ...S.btn("#10b981"), flex: 1, padding: 12, fontSize: 14 }}>✅ Aprobar</button>
+                          <button onClick={() => approveRestaurant(r.id, false)} style={{ ...S.btn("#ef4444"), padding: 12, fontSize: 14 }}>Rechazar</button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {approved.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, color: "#10b981", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, marginTop: 8 }}>✅ Aprobados</div>
+                    {approved.map(r => (
+                      <div key={r.id} style={{ ...S.card, opacity: 0.85 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                            <div style={{ fontSize: 32 }}>{r.image}</div>
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{r.name}</div>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>{r.category} · {r.profiles?.name}</div>
+                            </div>
+                          </div>
+                          <button onClick={() => approveRestaurant(r.id, false)} style={S.btn("#334155")}>Suspender</button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {restaurants.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><div style={{ fontSize: 48 }}>🍽️</div><div style={{ marginTop: 12 }}>No hay restaurantes aún</div></div>}
+              </>
+            )}
+            {tab === "users" && (
+              <>
+                {[["client","👤 Clientes"],["restaurant","🍽️ Restaurantes"],["delivery","🛵 Repartidores"]].map(([role, label]) => {
+                  const filtered = users.filter(u => u.role === role);
+                  if (!filtered.length) return null;
+                  return (
+                    <div key={role}>
+                      <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, marginTop: 12 }}>{label} ({filtered.length})</div>
+                      {filtered.map(u => (
+                        <div key={u.id} style={{ background: "#1e293b", borderRadius: 12, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <div style={{ fontWeight: 700 }}>{u.name}</div>
+                            <div style={{ fontSize: 12, color: "#64748b" }}>{u.phone || "Sin teléfono"}</div>
+                            {u.mp_link && <div style={{ fontSize: 12, color: "#06b6d4", marginTop: 2 }}>💳 {u.mp_link}</div>}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#475569" }}>{new Date(u.created_at).toLocaleDateString("es-AR")}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 //  ROOT APP
 // ──────────────────────────────────────────────────────────────────────────────
@@ -911,6 +1060,8 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
   return (
     <>
