@@ -1081,8 +1081,10 @@ export default function App() {
           <div style={{ color: "#f97316", fontSize: 28, fontWeight: 900, marginTop: 12 }}>RapidoYa</div>
           <div style={{ marginTop: 20 }}><Spinner /></div>
         </div>
-      ) : !session ? (
+        ) : !session ? (
         <AuthScreen onAuth={setSession} />
+      ) : isAdmin ? (
+        <AdminView onLogout={handleLogout} />
       ) : profile?.role === "restaurant" ? (
         <RestaurantView user={session.user} profile={profile} onLogout={handleLogout} />
       ) : profile?.role === "delivery" ? (
