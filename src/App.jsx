@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 
 // ─── ADMIN EMAIL ─────────────────────────────────────────────────────────────
-const ADMIN_EMAIL = "admin@rapidoya.com"; // Cambiá esto por tu email
+const ADMIN_EMAIL = "cirotonini30@gmail.com"; 
 
 // ─── ESTILOS COMPARTIDOS ──────────────────────────────────────────────────────
 const S = {
