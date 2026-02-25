@@ -863,9 +863,9 @@ function AdminView({ onLogout }) {
   }, []);
 
   const approveRestaurant = async (id, approved) => {
-    await supabase.from("restaurants").update({ approved }).eq("id", id);
-    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved } : r));
-  };
+  await supabase.from("restaurants").update({ approved, active: approved }).eq("id", id);
+  setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved, active: approved } : r));
+};
 
   const pending = restaurants.filter(r => !r.approved);
   const approved = restaurants.filter(r => r.approved);
