@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
 const ADMIN_EMAIL = "cirotonini30@gmail.com";
 
-// ── Colores principales adaptados al logo ──
 const C = {
   primary: "#cc1f1f",
   primaryDark: "#a81515",
@@ -32,8 +31,13 @@ const S = {
     fontFamily: "'Nunito', sans-serif",
   }),
   card: {
-    background: "#1e293b", borderRadius: 16, padding: 18,
-    marginBottom: 14, border: "1px solid #334155",
+    background: "#2a0a0a", borderRadius: 16, padding: 18,
+    marginBottom: 14, border: "1px solid #4a1515",
+  },
+  label: {
+    fontSize: 12, color: "#94a3b8", fontWeight: 700,
+    textTransform: "uppercase", letterSpacing: 1,
+    display: "block", marginBottom: 6,
   },
 };
 
@@ -69,8 +73,8 @@ function ProgressBar({ status }) {
   const pct = status === "pending" ? 0 : Math.round(((idx + 1) / steps.length) * 100);
   return (
     <div style={{ margin: "12px 0" }}>
-      <div style={{ height: 8, background: "#0f172a", borderRadius: 4, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg,${C.primaryDark},${C.primaryLight})`, borderRadius: 4, transition: "width 0.6s ease" }} />
+      <div style={{ height: 8, background: "#1a0505", borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg,#a81515,#e63030)`, borderRadius: 4, transition: "width 0.6s ease" }} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
         {["✅","👨‍🍳","📦","🛵","🎉"].map((icon, i) => (
@@ -84,12 +88,23 @@ function ProgressBar({ status }) {
 function Spinner() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-      <div style={{ width: 36, height: 36, border: `3px solid #4a1515`, borderTop: `3px solid ${C.primary}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ width: 36, height: 36, border: "3px solid #4a1515", borderTop: "3px solid #cc1f1f", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
     </div>
   );
 }
 
-function AuthScreen({ onAuth }) {
+function SaveMsg({ msg }) {
+  if (!msg) return null;
+  const ok = msg.startsWith("✅");
+  return (
+    <div style={{ background: ok ? "#10b98122" : "#ef444422", border: `1px solid ${ok ? "#10b981" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: ok ? "#10b981" : "#ef4444" }}>{msg}</div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────
+function AuthScreen() {
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("client");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -97,20 +112,16 @@ function AuthScreen({ onAuth }) {
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
       if (mode === "register") {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: form.email, password: form.password,
-          options: { data: { name: form.name, phone: form.phone, role } }
-        });
-        if (signUpError) throw signUpError;
+        const { error: e } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone, role } } });
+        if (e) throw e;
         setError("✅ Revisá tu email para confirmar tu cuenta, luego iniciá sesión.");
         setMode("login");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
-        if (signInError) throw signInError;
+        const { error: e } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+        if (e) throw e;
       }
     } catch (e) { setError(e.message || "Error al procesar"); }
     setLoading(false);
@@ -118,9 +129,7 @@ function AuthScreen({ onAuth }) {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Nunito', sans-serif" }}>
-      <div style={{ animation: "float 3s ease-in-out infinite", marginBottom: 12 }}>
-        <Logo size={90} />
-      </div>
+      <div style={{ animation: "float 3s ease-in-out infinite", marginBottom: 12 }}><Logo size={90} /></div>
       <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>RapidoYa</div>
       <div style={{ color: "#64748b", fontSize: 14, marginTop: 4, marginBottom: 32 }}>Tu comida favorita, en tu puerta</div>
       <div style={{ width: "100%", maxWidth: 380, background: C.card, borderRadius: 24, padding: 28, border: `1px solid ${C.border}` }}>
@@ -131,25 +140,23 @@ function AuthScreen({ onAuth }) {
         </div>
         {mode === "register" && (
           <>
-            <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Nombre completo</label>
-            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Juan García" style={{ ...S.input, marginTop: 6, marginBottom: 14 }} />
-            <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Teléfono</label>
-            <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginTop: 6, marginBottom: 14 }} />
-            <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Soy...</label>
-            <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 14 }}>
+            <label style={S.label}>Nombre completo</label>
+            <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Juan García" style={{ ...S.input, marginBottom: 14 }} />
+            <label style={S.label}>Teléfono</label>
+            <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 14 }} />
+            <label style={S.label}>Soy...</label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
               {[["client","👤 Cliente"],["restaurant","🍽️ Restaurante"],["delivery","🛵 Repartidor"]].map(([key, label]) => (
                 <button key={key} onClick={() => setRole(key)} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, background: role === key ? C.primary + "22" : "#1a0505", color: role === key ? C.primary : "#64748b", border: role === key ? `2px solid ${C.primary}` : `1px solid ${C.border}`, fontWeight: 700, cursor: "pointer", fontSize: 11, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
               ))}
             </div>
           </>
         )}
-        <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Email</label>
-        <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="tu@email.com" type="email" style={{ ...S.input, marginTop: 6, marginBottom: 14 }} />
-        <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Contraseña</label>
-        <input value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" type="password" style={{ ...S.input, marginTop: 6, marginBottom: 20 }} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
-        {error && (
-          <div style={{ background: error.startsWith("✅") ? "#10b98122" : "#ef444422", border: `1px solid ${error.startsWith("✅") ? "#10b981" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: error.startsWith("✅") ? "#10b981" : "#ef4444" }}>{error}</div>
-        )}
+        <label style={S.label}>Email</label>
+        <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="tu@email.com" type="email" style={{ ...S.input, marginBottom: 14 }} />
+        <label style={S.label}>Contraseña</label>
+        <input value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" type="password" style={{ ...S.input, marginBottom: 20 }} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+        {error && <SaveMsg msg={error} />}
         <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", background: loading ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
           {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
         </button>
@@ -158,7 +165,11 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-function ClientView({ user, profile, onLogout }) {
+// ─────────────────────────────────────────────
+// CLIENT
+// ─────────────────────────────────────────────
+function ClientView({ user, profile: initialProfile, onLogout }) {
+  const [profile, setProfile] = useState(initialProfile);
   const [screen, setScreen] = useState("home");
   const [restaurants, setRestaurants] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -166,10 +177,22 @@ function ClientView({ user, profile, onLogout }) {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [trackOrder, setTrackOrder] = useState(null);
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState(initialProfile?.address || "");
   const [payMethod, setPayMethod] = useState("Efectivo");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "", address: initialProfile?.address || "" });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState("");
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    const { error } = await supabase.from("profiles").update(profileForm).eq("id", user.id);
+    if (error) setProfileMsg("❌ Error: " + error.message);
+    else { setProfile(p => ({ ...p, ...profileForm })); setAddress(profileForm.address); setProfileMsg("✅ Perfil actualizado"); }
+    setSavingProfile(false);
+    setTimeout(() => setProfileMsg(""), 3000);
+  };
 
   useEffect(() => {
     supabase.from("restaurants").select("*").eq("active", true).eq("approved", true)
@@ -195,9 +218,7 @@ function ClientView({ user, profile, onLogout }) {
 
   const loadMenu = async (rest) => {
     const { data } = await supabase.from("menu_items").select("*").eq("restaurant_id", rest.id).eq("available", true);
-    setMenuItems(data || []);
-    setSelectedRest(rest);
-    setScreen("menu");
+    setMenuItems(data || []); setSelectedRest(rest); setScreen("menu");
   };
 
   const addToCart = (item) => setCart(prev => {
@@ -221,9 +242,7 @@ function ClientView({ user, profile, onLogout }) {
       total: cartTotal, delivery_fee: 500, address, pay_method: payMethod, status: "pending",
     }).select().single();
     if (error) { alert("Error al crear pedido: " + error.message); return; }
-    setTrackOrder(data);
-    setCart([]);
-    setScreen("tracking");
+    setTrackOrder(data); setCart([]); setScreen("tracking");
   };
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -235,18 +254,20 @@ function ClientView({ user, profile, onLogout }) {
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", color: "#f1f5f9", minHeight: "100%", background: C.bg }}>
+      {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, padding: "16px 20px", position: "sticky", top: 0, zIndex: 50, boxShadow: `0 4px 20px ${C.primary}66` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {screen !== "home" && (
+            {screen !== "home" && screen !== "profile" && (
               <button onClick={() => screen === "cart" ? setScreen("menu") : setScreen("home")} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, cursor: "pointer", fontSize: 18 }}>←</button>
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Logo size={32} />
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 20 }}>RapidoYa</div>
-                <div style={{ fontSize: 12, opacity: 0.85 }}>👤 {profile?.name}</div>
-              </div>
+            {screen === "profile" && (
+              <button onClick={() => setScreen("home")} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, cursor: "pointer", fontSize: 18 }}>←</button>
+            )}
+            <Logo size={32} />
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 20 }}>RapidoYa</div>
+              <div style={{ fontSize: 12, opacity: 0.85 }}>👤 {profile?.name}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -255,12 +276,36 @@ function ClientView({ user, profile, onLogout }) {
                 🛒 {cart.reduce((s, c) => s + c.qty, 0)}
               </button>
             )}
-            <button onClick={onLogout} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>Salir</button>
+            {screen !== "profile" && (
+              <button onClick={() => setScreen("profile")} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 10px", cursor: "pointer", fontSize: 15 }}>⚙️</button>
+            )}
+            <button onClick={onLogout} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>Salir</button>
           </div>
         </div>
       </div>
 
       <div style={{ padding: 16, maxWidth: 600, margin: "0 auto", paddingBottom: 90 }}>
+
+        {/* PERFIL CLIENTE */}
+        {screen === "profile" && (
+          <>
+            <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 16, marginTop: 4 }}>⚙️ Mi perfil</div>
+            <div style={S.card}>
+              <label style={S.label}>Nombre</label>
+              <input value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} style={{ ...S.input, marginBottom: 14 }} />
+              <label style={S.label}>Teléfono</label>
+              <input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 14 }} />
+              <label style={S.label}>Dirección habitual</label>
+              <input value={profileForm.address} onChange={e => setProfileForm(p => ({ ...p, address: e.target.value }))} placeholder="Ej: San Martín 456" style={{ ...S.input, marginBottom: 20 }} />
+              <SaveMsg msg={profileMsg} />
+              <button onClick={saveProfile} disabled={savingProfile} style={{ width: "100%", background: savingProfile ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                {savingProfile ? "Guardando..." : "💾 Guardar cambios"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* HOME */}
         {screen === "home" && (
           <>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Buscar restaurante o categoría..." style={{ ...S.input, margin: "16px 0", padding: "12px 16px", borderRadius: 14, fontSize: 15 }} />
@@ -282,7 +327,12 @@ function ClientView({ user, profile, onLogout }) {
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={60} /><div style={{ marginTop: 12 }}>No hay restaurantes disponibles aún</div></div>
             ) : filtered.map(rest => (
               <div key={rest.id} onClick={() => loadMenu(rest)} style={{ background: C.card, borderRadius: 18, marginBottom: 14, cursor: "pointer", overflow: "hidden", border: `1px solid ${C.border}` }}>
-                <div style={{ background: `linear-gradient(135deg,#3a1010,${C.card})`, height: 80, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 52 }}>{rest.image}</div>
+                <div style={{ background: `linear-gradient(135deg,#3a1010,${C.card})`, height: 100, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {rest.photo_url
+                    ? <img src={rest.photo_url} alt={rest.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ fontSize: 52 }}>{rest.image}</div>
+                  }
+                </div>
                 <div style={{ padding: "12px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <div><div style={{ fontWeight: 800, fontSize: 17 }}>{rest.name}</div><div style={{ fontSize: 13, color: "#94a3b8" }}>{rest.category}</div></div>
@@ -294,12 +344,20 @@ function ClientView({ user, profile, onLogout }) {
           </>
         )}
 
+        {/* MENU */}
         {screen === "menu" && selectedRest && (
           <>
-            <div style={{ background: `linear-gradient(135deg,#3a1010,${C.bg})`, borderRadius: 18, padding: 20, marginBottom: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 60 }}>{selectedRest.image}</div>
-              <div style={{ fontWeight: 900, fontSize: 22, marginTop: 8 }}>{selectedRest.name}</div>
-              <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Envío $500</div>
+            <div style={{ background: `linear-gradient(135deg,#3a1010,${C.bg})`, borderRadius: 18, marginBottom: 16, overflow: "hidden" }}>
+              <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {selectedRest.photo_url
+                  ? <img src={selectedRest.photo_url} alt={selectedRest.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <div style={{ fontSize: 60 }}>{selectedRest.image}</div>
+                }
+              </div>
+              <div style={{ padding: "14px 20px", textAlign: "center" }}>
+                <div style={{ fontWeight: 900, fontSize: 22 }}>{selectedRest.name}</div>
+                <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Envío $500</div>
+              </div>
             </div>
             {menuItems.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={48} /><div style={{ marginTop: 12 }}>Este restaurante aún no cargó su menú</div></div>
@@ -342,6 +400,7 @@ function ClientView({ user, profile, onLogout }) {
           </>
         )}
 
+        {/* CARRITO */}
         {screen === "cart" && (
           <>
             <div style={{ fontWeight: 900, fontSize: 22, marginBottom: 16, marginTop: 4 }}>Tu pedido 🛒</div>
@@ -363,9 +422,9 @@ function ClientView({ user, profile, onLogout }) {
                 <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(cartTotal + 500)}</span>
               </div>
             </div>
-            <label style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>📍 Dirección de entrega</label>
+            <label style={S.label}>📍 Dirección de entrega</label>
             <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ej: San Martín 456" style={{ ...S.input, marginBottom: 16 }} />
-            <label style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>💳 Método de pago</label>
+            <label style={{ ...S.label, marginTop: 4 }}>💳 Método de pago</label>
             <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
               {["Efectivo","Débito"].map(m => (
                 <button key={m} onClick={() => setPayMethod(m)} style={{ flex: 1, padding: 12, borderRadius: 12, border: payMethod === m ? `2px solid ${C.primary}` : `1px solid ${C.border}`, background: payMethod === m ? C.primary + "22" : C.card, color: payMethod === m ? C.primary : "#94a3b8", cursor: "pointer", fontWeight: 700, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
@@ -379,6 +438,7 @@ function ClientView({ user, profile, onLogout }) {
           </>
         )}
 
+        {/* TRACKING */}
         {screen === "tracking" && trackOrder && (
           <>
             <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 16, marginTop: 4 }}>📍 Seguimiento en vivo</div>
@@ -417,6 +477,9 @@ function ClientView({ user, profile, onLogout }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// RESTAURANT
+// ─────────────────────────────────────────────
 function RestaurantView({ user, profile, onLogout }) {
   const [tab, setTab] = useState("orders");
   const [restaurant, setRestaurant] = useState(null);
@@ -428,12 +491,17 @@ function RestaurantView({ user, profile, onLogout }) {
   const [editingPrepTime, setEditingPrepTime] = useState(null);
   const [newPrepTime, setNewPrepTime] = useState("");
   const [uploadingImage, setUploadingImage] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [restProfileForm, setRestProfileForm] = useState({ name: "", category: "", delivery_time: "" });
+  const [savingRestProfile, setSavingRestProfile] = useState(false);
+  const [restProfileMsg, setRestProfileMsg] = useState("");
 
   useEffect(() => {
     const load = async () => {
       const { data: rest } = await supabase.from("restaurants").select("*").eq("owner_id", user.id).single();
       if (rest) {
         setRestaurant(rest);
+        setRestProfileForm({ name: rest.name, category: rest.category, delivery_time: rest.delivery_time });
         const { data: items } = await supabase.from("menu_items").select("*").eq("restaurant_id", rest.id);
         setMenuItems(items || []);
         const { data: ords } = await supabase.from("orders").select("*").eq("restaurant_id", rest.id).order("created_at", { ascending: false });
@@ -460,6 +528,34 @@ function RestaurantView({ user, profile, onLogout }) {
     if (data) setRestaurant(data);
   };
 
+  const saveRestProfile = async () => {
+    setSavingRestProfile(true);
+    const { error } = await supabase.from("restaurants").update(restProfileForm).eq("id", restaurant.id);
+    if (error) setRestProfileMsg("❌ Error: " + error.message);
+    else { setRestaurant(p => ({ ...p, ...restProfileForm })); setRestProfileMsg("✅ Datos actualizados"); }
+    setSavingRestProfile(false);
+    setTimeout(() => setRestProfileMsg(""), 3000);
+  };
+
+  const handleRestPhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    const ext = file.name.split(".").pop();
+    const path = `restaurant-photos/${restaurant.id}.${ext}`;
+    const { error } = await supabase.storage.from("menu-images").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("menu-images").getPublicUrl(path);
+      await supabase.from("restaurants").update({ photo_url: urlData.publicUrl }).eq("id", restaurant.id);
+      setRestaurant(p => ({ ...p, photo_url: urlData.publicUrl }));
+      setRestProfileMsg("✅ Foto actualizada");
+    } else {
+      setRestProfileMsg("❌ Error al subir foto: " + error.message);
+    }
+    setUploadingPhoto(false);
+    setTimeout(() => setRestProfileMsg(""), 3000);
+  };
+
   const updateStatus = async (id, status) => { await supabase.from("orders").update({ status }).eq("id", id); };
 
   const updatePrepTime = async (id) => {
@@ -479,9 +575,7 @@ function RestaurantView({ user, profile, onLogout }) {
       const { data: urlData } = supabase.storage.from("menu-images").getPublicUrl(path);
       await supabase.from("menu_items").update({ image_url: urlData.publicUrl }).eq("id", itemId);
       setMenuItems(prev => prev.map(i => i.id === itemId ? { ...i, image_url: urlData.publicUrl } : i));
-    } else {
-      alert("Error al subir imagen: " + error.message);
-    }
+    } else { alert("Error al subir imagen: " + error.message); }
     setUploadingImage(null);
   };
 
@@ -542,7 +636,7 @@ function RestaurantView({ user, profile, onLogout }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Logo size={30} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>{restaurant.image} {restaurant.name}</div>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>{restaurant.name}</div>
               <div style={{ fontSize: 13, opacity: 0.8 }}>Panel de cocina · {profile?.name}</div>
             </div>
           </div>
@@ -552,11 +646,44 @@ function RestaurantView({ user, profile, onLogout }) {
 
       <div style={{ maxWidth: 700, margin: "0 auto", padding: 16, paddingBottom: 90 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {[["orders","📋 Pedidos"],["menu","📝 Menú"]].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: tab === key ? `linear-gradient(135deg,${C.primary},${C.primaryDark})` : C.card, color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
+          {[["orders","📋 Pedidos"],["menu","📝 Menú"],["profile","⚙️ Perfil"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: tab === key ? `linear-gradient(135deg,${C.primary},${C.primaryDark})` : C.card, color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
           ))}
         </div>
 
+        {/* PERFIL RESTAURANTE */}
+        {tab === "profile" && (
+          <>
+            <div style={{ ...S.card, textAlign: "center" }}>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14 }}>📸 Foto del local</div>
+              <div style={{ width: "100%", height: 160, borderRadius: 12, overflow: "hidden", background: "#1a0505", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                {restaurant.photo_url
+                  ? <img src={restaurant.photo_url} alt="Local" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <div style={{ fontSize: 60 }}>{restaurant.image || "🍽️"}</div>
+                }
+              </div>
+              <label style={{ display: "inline-block", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, borderRadius: 10, padding: "10px 20px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>
+                {uploadingPhoto ? "⏳ Subiendo..." : "📷 Cambiar foto del local"}
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleRestPhotoUpload} disabled={uploadingPhoto} />
+              </label>
+            </div>
+            <div style={S.card}>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14 }}>🍽️ Datos del restaurante</div>
+              <label style={S.label}>Nombre</label>
+              <input value={restProfileForm.name} onChange={e => setRestProfileForm(p => ({ ...p, name: e.target.value }))} style={{ ...S.input, marginBottom: 14 }} />
+              <label style={S.label}>Categoría</label>
+              <input value={restProfileForm.category} onChange={e => setRestProfileForm(p => ({ ...p, category: e.target.value }))} placeholder="Pizzas, Parrilla..." style={{ ...S.input, marginBottom: 14 }} />
+              <label style={S.label}>Tiempo estimado de entrega</label>
+              <input value={restProfileForm.delivery_time} onChange={e => setRestProfileForm(p => ({ ...p, delivery_time: e.target.value }))} placeholder="25-35 min" style={{ ...S.input, marginBottom: 20 }} />
+              <SaveMsg msg={restProfileMsg} />
+              <button onClick={saveRestProfile} disabled={savingRestProfile} style={{ width: "100%", background: savingRestProfile ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                {savingRestProfile ? "Guardando..." : "💾 Guardar cambios"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* PEDIDOS */}
         {tab === "orders" && (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
@@ -591,7 +718,7 @@ function RestaurantView({ user, profile, onLogout }) {
                       <span style={{ color: C.primary, fontWeight: 700 }}>{fp(item.price * item.qty)}</span>
                     </div>
                   ))}
-                  <div style={{ borderTop: `1px solid ${C.card}`, marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
+                  <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
                     <span>Total</span><span>{fp(order.total)}</span>
                   </div>
                 </div>
@@ -622,6 +749,7 @@ function RestaurantView({ user, profile, onLogout }) {
           </>
         )}
 
+        {/* MENU */}
         {tab === "menu" && (
           <>
             <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 14 }}>Menú de {restaurant.name}</div>
@@ -666,22 +794,34 @@ function RestaurantView({ user, profile, onLogout }) {
   );
 }
 
-function DeliveryView({ user, profile, onLogout }) {
+// ─────────────────────────────────────────────
+// DELIVERY
+// ─────────────────────────────────────────────
+function DeliveryView({ user, profile: initialProfile, onLogout }) {
+  const [profile, setProfile] = useState(initialProfile);
   const [tab, setTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [myDeliveries, setMyDeliveries] = useState([]);
   const [feeInput, setFeeInput] = useState({});
   const [loading, setLoading] = useState(true);
-  const [mpLink, setMpLink] = useState(profile?.mp_link || "");
-  const [savingMp, setSavingMp] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "", mp_link: initialProfile?.mp_link || "" });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState("");
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    const { error } = await supabase.from("profiles").update(profileForm).eq("id", user.id);
+    if (error) setProfileMsg("❌ Error: " + error.message);
+    else { setProfile(p => ({ ...p, ...profileForm })); setProfileMsg("✅ Perfil actualizado"); }
+    setSavingProfile(false);
+    setTimeout(() => setProfileMsg(""), 3000);
+  };
 
   useEffect(() => {
     const load = async () => {
       const { data: ready } = await supabase.from("orders").select("*").eq("status", "ready").is("delivery_id", null);
       const { data: mine } = await supabase.from("orders").select("*").eq("delivery_id", user.id).order("created_at", { ascending: false });
-      setOrders(ready || []);
-      setMyDeliveries(mine || []);
-      setLoading(false);
+      setOrders(ready || []); setMyDeliveries(mine || []); setLoading(false);
     };
     load();
     const channel = supabase.channel("delivery-orders")
@@ -698,13 +838,6 @@ function DeliveryView({ user, profile, onLogout }) {
       }).subscribe();
     return () => supabase.removeChannel(channel);
   }, [user.id]);
-
-  const saveMpLink = async () => {
-    setSavingMp(true);
-    await supabase.from("profiles").update({ mp_link: mpLink }).eq("id", user.id);
-    setSavingMp(false);
-    alert("✅ Link guardado correctamente");
-  };
 
   const acceptDelivery = async (order) => {
     const fee = parseInt(feeInput[order.id]) || 500;
@@ -740,17 +873,23 @@ function DeliveryView({ user, profile, onLogout }) {
           ))}
         </div>
 
+        {/* PERFIL REPARTIDOR */}
         {tab === "profile" && (
           <div style={S.card}>
-            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 8 }}>💳 Tu link de MercadoPago</div>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Los clientes que paguen con débito recibirán este link para pagarte directo a vos.</div>
-            <input value={mpLink} onChange={e => setMpLink(e.target.value)} placeholder="Ej: juan.garcia.mp o https://link.mercadopago.com.ar/..." style={{ ...S.input, marginBottom: 12 }} />
-            <button onClick={saveMpLink} disabled={savingMp} style={{ width: "100%", background: savingMp ? C.border : "linear-gradient(135deg,#009ee3,#007eb5)", border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
-              {savingMp ? "Guardando..." : "💾 Guardar link"}
+            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 16 }}>⚙️ Mi perfil</div>
+            <label style={S.label}>Nombre</label>
+            <input value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} style={{ ...S.input, marginBottom: 14 }} />
+            <label style={S.label}>Teléfono</label>
+            <input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 14 }} />
+            <label style={S.label}>Link de MercadoPago</label>
+            <input value={profileForm.mp_link} onChange={e => setProfileForm(p => ({ ...p, mp_link: e.target.value }))} placeholder="Ej: juan.garcia.mp" style={{ ...S.input, marginBottom: 8 }} />
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
+              💡 Los clientes que paguen con débito recibirán este link para pagarte directo a vos.
+            </div>
+            <SaveMsg msg={profileMsg} />
+            <button onClick={saveProfile} disabled={savingProfile} style={{ width: "100%", background: savingProfile ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+              {savingProfile ? "Guardando..." : "💾 Guardar cambios"}
             </button>
-            {profile?.mp_link && (
-              <div style={{ marginTop: 12, padding: "10px 14px", background: "#0f172a", borderRadius: 10, fontSize: 13, color: "#10b981" }}>✅ Link actual: {profile.mp_link}</div>
-            )}
           </div>
         )}
 
@@ -768,14 +907,12 @@ function DeliveryView({ user, profile, onLogout }) {
                 </div>
               ))}
             </div>
-
             {!profile?.mp_link && (
               <div onClick={() => setTab("profile")} style={{ background: C.primary + "22", border: `1px solid ${C.primary}`, borderRadius: 12, padding: 14, marginBottom: 16, cursor: "pointer" }}>
                 <div style={{ fontWeight: 700, color: C.primary }}>⚠️ Configurá tu link de MercadoPago</div>
                 <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>Tocá acá para agregar tu link de cobro por débito.</div>
               </div>
             )}
-
             {orders.length > 0 && (
               <>
                 <div style={{ fontSize: 12, color: C.primary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>📦 Listos para retirar</div>
@@ -806,7 +943,6 @@ function DeliveryView({ user, profile, onLogout }) {
                 ))}
               </>
             )}
-
             {active.length > 0 && (
               <>
                 <div style={{ fontSize: 12, color: C.accent, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10, marginTop: 8 }}>🛵 En curso</div>
@@ -829,15 +965,13 @@ function DeliveryView({ user, profile, onLogout }) {
                 ))}
               </>
             )}
-
             {orders.length === 0 && active.length === 0 && (
               <div style={{ textAlign: "center", padding: 50, color: "#475569" }}>
                 <div style={{ fontSize: 52 }}>🛵</div>
                 <div style={{ marginTop: 12, fontSize: 16 }}>Sin pedidos disponibles</div>
-                <div style={{ fontSize: 13, marginTop: 6, color: "#334155" }}>Los pedidos aparecerán acá cuando estén listos</div>
+                <div style={{ fontSize: 13, marginTop: 6, color: "#64748b" }}>Los pedidos aparecerán acá cuando estén listos</div>
               </div>
             )}
-
             {delivered.length > 0 && (
               <>
                 <div style={{ fontSize: 12, color: "#10b981", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10, marginTop: 8 }}>✅ Entregas de hoy</div>
@@ -859,6 +993,9 @@ function DeliveryView({ user, profile, onLogout }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────
 function AdminView({ onLogout }) {
   const [tab, setTab] = useState("restaurants");
   const [restaurants, setRestaurants] = useState([]);
@@ -869,23 +1006,20 @@ function AdminView({ onLogout }) {
     const load = async () => {
       const { data: rests } = await supabase.from("restaurants").select("*, profiles(name, phone)").order("created_at", { ascending: false });
       const { data: profs } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      setRestaurants(rests || []);
-      setUsers(profs || []);
-      setLoading(false);
+      setRestaurants(rests || []); setUsers(profs || []); setLoading(false);
     };
     load();
   }, []);
 
-const approveRestaurant = async (id, approved) => {
-  if (!approved) {
-    // Rechazar = eliminar el registro
-    await supabase.from("restaurants").delete().eq("id", id);
-    setRestaurants(prev => prev.filter(r => r.id !== id));
-  } else {
-    await supabase.from("restaurants").update({ approved: true, active: true }).eq("id", id);
-    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved: true, active: true } : r));
-  }
-};
+  const approveRestaurant = async (id, approved) => {
+    if (!approved) {
+      await supabase.from("restaurants").delete().eq("id", id);
+      setRestaurants(prev => prev.filter(r => r.id !== id));
+    } else {
+      await supabase.from("restaurants").update({ approved: true, active: true }).eq("id", id);
+      setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved: true, active: true } : r));
+    }
+  };
 
   const pending = restaurants.filter(r => !r.approved);
   const approved = restaurants.filter(r => r.approved);
@@ -942,7 +1076,7 @@ const approveRestaurant = async (id, approved) => {
                         </div>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => approveRestaurant(r.id, true)} style={{ ...S.btn("#10b981"), flex: 1, padding: 12, fontSize: 14 }}>✅ Aprobar</button>
-                          <button onClick={() => approveRestaurant(r.id, false)} style={{ ...S.btn("#ef4444"), padding: 12, fontSize: 14 }}>Rechazar</button>
+                          <button onClick={() => approveRestaurant(r.id, false)} style={{ ...S.btn("#ef4444"), padding: 12, fontSize: 14 }}>✕ Rechazar</button>
                         </div>
                       </div>
                     ))}
@@ -955,13 +1089,16 @@ const approveRestaurant = async (id, approved) => {
                       <div key={r.id} style={{ ...S.card, opacity: 0.85 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                            <div style={{ fontSize: 32 }}>{r.image}</div>
+                            {r.photo_url
+                              ? <img src={r.photo_url} alt={r.name} style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover" }} />
+                              : <div style={{ fontSize: 32 }}>{r.image}</div>
+                            }
                             <div>
                               <div style={{ fontWeight: 700 }}>{r.name}</div>
                               <div style={{ fontSize: 12, color: "#64748b" }}>{r.category} · {r.profiles?.name}</div>
                             </div>
                           </div>
-                          <button onClick={() => approveRestaurant(r.id, false)} style={S.btn(C.border)}>Suspender</button>
+                          <button onClick={() => approveRestaurant(r.id, false)} style={S.btn("#ef4444")}>Suspender</button>
                         </div>
                       </div>
                     ))}
@@ -1000,6 +1137,9 @@ const approveRestaurant = async (id, approved) => {
   );
 }
 
+// ─────────────────────────────────────────────
+// ROOT
+// ─────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -1045,14 +1185,12 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
       {loading ? (
         <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
-          <div style={{ animation: "float 1.5s ease-in-out infinite" }}>
-            <Logo size={80} />
-          </div>
+          <div style={{ animation: "float 1.5s ease-in-out infinite" }}><Logo size={80} /></div>
           <div style={{ color: C.primary, fontSize: 28, fontWeight: 900, marginTop: 12 }}>RapidoYa</div>
           <div style={{ marginTop: 20 }}><Spinner /></div>
         </div>
       ) : !session ? (
-        <AuthScreen onAuth={setSession} />
+        <AuthScreen />
       ) : isAdmin ? (
         <AdminView onLogout={handleLogout} />
       ) : profile?.role === "restaurant" ? (
