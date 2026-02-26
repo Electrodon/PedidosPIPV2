@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f97316" />
+    <meta name="theme-color" content="#cc1f1f" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -12,23 +12,32 @@
     <link rel="manifest" href="/manifest.json" />
     <title>RapidoYa — Tu comida favorita</title>
     <style>
-      body { background: #0f172a; margin: 0; padding: 0; }
+      body { background: #1a0505; margin: 0; padding: 0; }
       #splash {
-        position: fixed; inset: 0; background: #0f172a;
+        position: fixed; inset: 0; background: #1a0505;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
         z-index: 9999; transition: opacity 0.4s ease;
       }
       #splash.hidden { opacity: 0; pointer-events: none; }
-      #splash-icon { font-size: 72px; animation: bounce 1s ease-in-out infinite; }
-      #splash-title { color: #f97316; font-size: 32px; font-weight: 900; margin-top: 12px; font-family: sans-serif; }
-      #splash-sub { color: #475569; font-size: 14px; margin-top: 8px; font-family: sans-serif; }
-      @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+      #splash-logo {
+        width: 110px; height: 110px; object-fit: contain;
+        border-radius: 20px;
+        animation: bounce 1s ease-in-out infinite;
+        filter: drop-shadow(0 8px 24px rgba(204,31,31,0.5));
+      }
+      #splash-title {
+        color: #cc1f1f;
+        font-size: 32px; font-weight: 900; margin-top: 16px;
+        font-family: sans-serif; letter-spacing: -1px;
+      }
+      #splash-sub { color: #6b2020; font-size: 14px; margin-top: 6px; font-family: sans-serif; }
+      @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
     </style>
   </head>
   <body>
     <div id="splash">
-      <div id="splash-icon">🍽️</div>
+      <img id="splash-logo" src="/logo.png" alt="RapidoYa" />
       <div id="splash-title">RapidoYa</div>
       <div id="splash-sub">Tu comida favorita, en tu puerta</div>
     </div>
