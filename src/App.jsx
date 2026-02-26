@@ -876,10 +876,16 @@ function AdminView({ onLogout }) {
     load();
   }, []);
 
-  const approveRestaurant = async (id, approved) => {
-    await supabase.from("restaurants").update({ approved, active: approved }).eq("id", id);
-    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved, active: approved } : r));
-  };
+const approveRestaurant = async (id, approved) => {
+  if (!approved) {
+    // Rechazar = eliminar el registro
+    await supabase.from("restaurants").delete().eq("id", id);
+    setRestaurants(prev => prev.filter(r => r.id !== id));
+  } else {
+    await supabase.from("restaurants").update({ approved: true, active: true }).eq("id", id);
+    setRestaurants(prev => prev.map(r => r.id === id ? { ...r, approved: true, active: true } : r));
+  }
+};
 
   const pending = restaurants.filter(r => !r.approved);
   const approved = restaurants.filter(r => r.approved);
