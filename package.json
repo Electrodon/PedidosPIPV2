@@ -3,17 +3,19 @@
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",
-    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build"
+    "build": "DISABLE_ESLINT_PLUGIN=true SKIP_PREFLIGHT_CHECK=true react-scripts build"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "@supabase/supabase-js": "2.38.5"
+    "@supabase/supabase-js": "^2.97.0"
   },
   "overrides": {
     "ajv": "^8.0.0",
-    "fork-ts-checker-webpack-plugin": "6.5.3"
+    "fork-ts-checker-webpack-plugin": {
+      "schema-utils": "^4.0.0"
+    }
   },
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
