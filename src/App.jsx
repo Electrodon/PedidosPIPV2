@@ -9,14 +9,14 @@ const C = {
   primaryDark: "#a81515",
   primaryLight: "#e63030",
   accent: "#e8a020",
-  bg: "#0f172a",
-  card: "#1e293b",
-  border: "#334155",
+  bg: "#1a0505",
+  card: "#2a0a0a",
+  border: "#4a1515",
 };
 
 const S = {
   input: {
-    padding: "10px 14px", background: "#0f172a", border: "1px solid #334155",
+    padding: "10px 14px", background: "#2a0a0a", border: "1px solid #4a1515",
     borderRadius: 10, color: "#f1f5f9", fontSize: 14,
     fontFamily: "'Nunito', sans-serif", outline: "none",
     width: "100%", boxSizing: "border-box",
@@ -84,7 +84,7 @@ function ProgressBar({ status }) {
 function Spinner() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-      <div style={{ width: 36, height: 36, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.primary}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ width: 36, height: 36, border: `3px solid #4a1515`, borderTop: `3px solid ${C.primary}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
     </div>
   );
 }
@@ -124,7 +124,7 @@ function AuthScreen({ onAuth }) {
       <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>RapidoYa</div>
       <div style={{ color: "#64748b", fontSize: 14, marginTop: 4, marginBottom: 32 }}>Tu comida favorita, en tu puerta</div>
       <div style={{ width: "100%", maxWidth: 380, background: C.card, borderRadius: 24, padding: 28, border: `1px solid ${C.border}` }}>
-        <div style={{ display: "flex", marginBottom: 24, background: "#0f172a", borderRadius: 12, padding: 4 }}>
+        <div style={{ display: "flex", marginBottom: 24, background: "#1a0505", borderRadius: 12, padding: 4 }}>
           {[["login","Iniciar sesión"],["register","Registrarse"]].map(([key, label]) => (
             <button key={key} onClick={() => { setMode(key); setError(""); }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: mode === key ? C.primary : "transparent", color: mode === key ? "#fff" : "#64748b", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
           ))}
@@ -138,7 +138,7 @@ function AuthScreen({ onAuth }) {
             <label style={{ fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Soy...</label>
             <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 14 }}>
               {[["client","👤 Cliente"],["restaurant","🍽️ Restaurante"],["delivery","🛵 Repartidor"]].map(([key, label]) => (
-                <button key={key} onClick={() => setRole(key)} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, background: role === key ? C.primary + "22" : "#0f172a", color: role === key ? C.primary : "#64748b", border: role === key ? `2px solid ${C.primary}` : `1px solid ${C.border}`, fontWeight: 700, cursor: "pointer", fontSize: 11, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
+                <button key={key} onClick={() => setRole(key)} style={{ flex: 1, padding: "10px 4px", borderRadius: 10, background: role === key ? C.primary + "22" : "#1a0505", color: role === key ? C.primary : "#64748b", border: role === key ? `2px solid ${C.primary}` : `1px solid ${C.border}`, fontWeight: 700, cursor: "pointer", fontSize: 11, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
               ))}
             </div>
           </>
@@ -389,7 +389,7 @@ function ClientView({ user, profile, onLogout }) {
               </div>
               <ProgressBar status={trackOrder.status} />
               {!["delivered","rejected"].includes(trackOrder.status) && (
-                <div style={{ background: "#0f172a", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
+                <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
                   <div style={{ fontSize: 13, color: "#64748b" }}>Tiempo estimado</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: C.primary }}>{trackOrder.prep_time} min</div>
                 </div>
@@ -407,7 +407,7 @@ function ClientView({ user, profile, onLogout }) {
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
                 <span style={{ fontWeight: 800 }}>Total</span><span style={{ fontWeight: 900, color: C.primary }}>{fp(trackOrder.total + trackOrder.delivery_fee)}</span>
               </div>
-              <div style={{ marginTop: 8, padding: "8px 12px", background: "#0f172a", borderRadius: 10, fontSize: 13, color: "#64748b" }}>💳 Pago: {trackOrder.pay_method}</div>
+              <div style={{ marginTop: 8, padding: "8px 12px", background: "#1a0505", borderRadius: 10, fontSize: 13, color: "#64748b" }}>💳 Pago: {trackOrder.pay_method}</div>
             </div>
             <button onClick={() => setScreen("home")} style={{ ...S.btn(C.border), width: "100%", padding: 14, fontSize: 15 }}>← Volver al inicio</button>
           </>
@@ -584,7 +584,7 @@ function RestaurantView({ user, profile, onLogout }) {
                   </div>
                   <Badge status={order.status} />
                 </div>
-                <div style={{ background: "#0f172a", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
                   {order.items?.map((item, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
                       <span>x{item.qty} {item.name}</span>
@@ -599,7 +599,7 @@ function RestaurantView({ user, profile, onLogout }) {
                   <span style={{ fontSize: 13, color: "#64748b" }}>⏱</span>
                   {editingPrepTime === order.id ? (
                     <>
-                      <input value={newPrepTime} onChange={e => setNewPrepTime(e.target.value)} type="number" style={{ width: 60, padding: "4px 8px", background: "#0f172a", border: `1px solid ${C.primary}`, borderRadius: 8, color: "#f1f5f9", fontFamily: "'Nunito', sans-serif", fontSize: 14 }} />
+                      <input value={newPrepTime} onChange={e => setNewPrepTime(e.target.value)} type="number" style={{ width: 60, padding: "4px 8px", background: "#1a0505", border: `1px solid ${C.primary}`, borderRadius: 8, color: "#f1f5f9", fontFamily: "'Nunito', sans-serif", fontSize: 14 }} />
                       <span style={{ fontSize: 13, color: "#64748b" }}>min</span>
                       <button onClick={() => updatePrepTime(order.id)} style={S.btn("#10b981")}>✓</button>
                       <button onClick={() => setEditingPrepTime(null)} style={S.btn("#ef4444")}>✕</button>
@@ -631,7 +631,7 @@ function RestaurantView({ user, profile, onLogout }) {
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     {item.image_url
                       ? <img src={item.image_url} alt={item.name} style={{ width: 60, height: 60, borderRadius: 10, objectFit: "cover" }} />
-                      : <div style={{ width: 60, height: 60, borderRadius: 10, background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>{item.image}</div>
+                      : <div style={{ width: 60, height: 60, borderRadius: 10, background: "#1a0505", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>{item.image}</div>
                     }
                     <label style={{ position: "absolute", bottom: -4, right: -4, background: uploadingImage === item.id ? C.border : C.primary, borderRadius: "50%", width: 24, height: 24, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
                       {uploadingImage === item.id ? "⏳" : "📷"}
@@ -792,7 +792,7 @@ function DeliveryView({ user, profile, onLogout }) {
                     <div style={{ marginBottom: 12 }}>
                       {order.items?.map((item, i) => <div key={i} style={{ fontSize: 13, color: "#64748b" }}>x{item.qty} {item.name}</div>)}
                     </div>
-                    <div style={{ background: "#0f172a", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                    <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
                       <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>💰 Tu precio de envío:</div>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <input type="number" value={feeInput[order.id] || ""} onChange={e => setFeeInput(p => ({ ...p, [order.id]: e.target.value }))} placeholder="500" style={{ ...S.input, width: 100, textAlign: "center" }} />
@@ -1033,8 +1033,8 @@ export default function App() {
       <style>{`
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
         @keyframes spin{to{transform:rotate(360deg)}}
-        *{box-sizing:border-box} body{margin:0;background:#0f172a}
-        input::placeholder{color:#475569}
+        *{box-sizing:border-box} body{margin:0;background:#1a0505}
+        input::placeholder{color:#6b2020}
       `}</style>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
       {loading ? (
