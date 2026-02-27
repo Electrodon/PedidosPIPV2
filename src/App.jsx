@@ -475,7 +475,6 @@ const placeOrder = async () => {
                   />
                 </div>
               )}
-              </div>
               <ProgressBar status={trackOrder.status} />
               {!["delivered","rejected"].includes(trackOrder.status) && (
                 <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
