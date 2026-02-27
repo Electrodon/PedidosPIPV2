@@ -42,7 +42,7 @@ const S = {
 };
 
 const Logo = ({ size = 36 }) => (
-  <img src="/logo.png" alt="RapidoYa" style={{ width: size, height: size, objectFit: "contain", borderRadius: 8 }} />
+  <img src="/logo.png" alt="Gulita" style={{ width: size, height: size, objectFit: "contain", borderRadius: 8 }} />
 );
 
 const fp = (n) => `$${Number(n).toLocaleString("es-AR")}`;
@@ -149,7 +149,7 @@ function AuthScreen() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Nunito', sans-serif" }}>
       <div style={{ animation: "float 3s ease-in-out infinite", marginBottom: 12 }}><Logo size={90} /></div>
-      <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>RapidoYa</div>
+      <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>Gulita</div>
       <div style={{ color: "#64748b", fontSize: 14, marginTop: 4, marginBottom: 32 }}>Tu comida favorita, en tu puerta</div>
       <div style={{ width: "100%", maxWidth: 380, background: C.card, borderRadius: 24, padding: 28, border: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", marginBottom: 24, background: "#1a0505", borderRadius: 12, padding: 4 }}>
@@ -292,7 +292,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
             )}
             <Logo size={32} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 20 }}>RapidoYa</div>
+              <div style={{ fontWeight: 900, fontSize: 20 }}>Gulita</div>
               <div style={{ fontSize: 12, opacity: 0.85 }}>👤 {profile?.name}</div>
             </div>
           </div>
@@ -1090,7 +1090,7 @@ function AdminView({ onLogout }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Logo size={34} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>Panel Admin · RapidoYa</div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>Panel Admin · Gulita</div>
               <div style={{ fontSize: 12, color: "#64748b" }}>Control total de la plataforma</div>
             </div>
           </div>
@@ -1245,7 +1245,7 @@ export default function App() {
       {loading ? (
         <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
           <div style={{ animation: "float 1.5s ease-in-out infinite" }}><Logo size={80} /></div>
-          <div style={{ color: C.primary, fontSize: 28, fontWeight: 900, marginTop: 12 }}>RapidoYa</div>
+          <div style={{ color: C.primary, fontSize: 28, fontWeight: 900, marginTop: 12 }}>Gulita</div>
           <div style={{ marginTop: 20 }}><Spinner /></div>
         </div>
       ) : !session ? (
