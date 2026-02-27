@@ -466,6 +466,7 @@ const placeOrder = async () => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div><div style={{ fontWeight: 800, fontSize: 17 }}>{trackOrder.id}</div><div style={{ fontSize: 12, color: "#64748b" }}>📍 {trackOrder.address}</div></div>
                 <Badge status={trackOrder.status} />
+                </div>
             {["picked","delivering"].includes(trackOrder.status) && trackOrder.delivery_phone && (
               <div style={{ marginTop: 10 }}>
                 <WaButton
