@@ -100,6 +100,21 @@ function SaveMsg({ msg }) {
     <div style={{ background: ok ? "#10b98122" : "#ef444422", border: `1px solid ${ok ? "#10b981" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: ok ? "#10b981" : "#ef4444" }}>{msg}</div>
   );
 }
+const waLink = (phone, msg) => {
+  const clean = (phone || "").replace(/\D/g, "");
+  const number = clean.startsWith("54") ? clean : `54${clean}`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
+};
+
+const WaButton = ({ phone, msg, label = "💬 WhatsApp" }) => {
+  if (!phone) return null;
+  return (
+    <a href={waLink(phone, msg)} target="_blank" rel="noopener noreferrer"
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#25d366", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif", textDecoration: "none" }}>
+      {label}
+    </a>
+  );
+};
 
 // ─────────────────────────────────────────────
 // AUTH
