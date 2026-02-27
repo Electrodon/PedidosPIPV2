@@ -100,6 +100,10 @@ function SaveMsg({ msg }) {
     <div style={{ background: ok ? "#10b98122" : "#ef444422", border: `1px solid ${ok ? "#10b981" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: ok ? "#10b981" : "#ef4444" }}>{msg}</div>
   );
 }
+
+// ─────────────────────────────────────────────
+// WHATSAPP
+// ─────────────────────────────────────────────
 const waLink = (phone, msg) => {
   const clean = (phone || "").replace(/\D/g, "");
   const number = clean.startsWith("54") ? clean : `54${clean}`;
@@ -248,22 +252,24 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
     return prev.map(c => c.id === id ? { ...c, qty: c.qty - 1 } : c);
   });
 
-const placeOrder = async () => {
-  if (!address.trim()) { alert("Ingresá tu dirección"); return; }
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const { data: restProfile } = await supabase
-    .from("profiles").select("phone").eq("id", selectedRest.owner_id).single();
-  const { data, error } = await supabase.from("orders").insert({
-    client_id: user.id, restaurant_id: selectedRest.id,
-    items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, price: c.price })),
-    total: cartTotal, delivery_fee: 500, address, pay_method: payMethod, status: "pending",
-    client_phone: profile?.phone,
-    restaurant_phone: restProfile?.phone,
-  }).select().single();
+  const placeOrder = async () => {
+    if (!address.trim()) { alert("Ingresá tu dirección"); return; }
+    const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
-  if (error) { alert("Error al crear pedido: " + error.message); return; }
-  setTrackOrder(data); setCart([]); setScreen("tracking");
-};
+    const { data: restProfile } = await supabase
+      .from("profiles").select("phone").eq("id", selectedRest.owner_id).single();
+
+    const { data, error } = await supabase.from("orders").insert({
+      client_id: user.id, restaurant_id: selectedRest.id,
+      items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, price: c.price })),
+      total: cartTotal, delivery_fee: 500, address, pay_method: payMethod, status: "pending",
+      client_phone: profile?.phone,
+      restaurant_phone: restProfile?.phone,
+    }).select().single();
+
+    if (error) { alert("Error al crear pedido: " + error.message); return; }
+    setTrackOrder(data); setCart([]); setScreen("tracking");
+  };
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const activeOrders = orders.filter(o => !["delivered","rejected"].includes(o.status));
@@ -466,13 +472,13 @@ const placeOrder = async () => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div><div style={{ fontWeight: 800, fontSize: 17 }}>{trackOrder.id}</div><div style={{ fontSize: 12, color: "#64748b" }}>📍 {trackOrder.address}</div></div>
                 <Badge status={trackOrder.status} />
-                </div>
-            {["picked","delivering"].includes(trackOrder.status) && trackOrder.delivery_phone && (
-              <div style={{ marginTop: 10 }}>
-                <WaButton
-                  phone={trackOrder.delivery_phone}
-                  msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `}
-                  label="💬 Contactar repartidor"
+              </div>
+              {["picked","delivering"].includes(trackOrder.status) && (
+                <div style={{ marginBottom: 12 }}>
+                  <WaButton
+                    phone={trackOrder.delivery_phone}
+                    msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `}
+                    label="💬 Contactar repartidor"
                   />
                 </div>
               )}
@@ -773,12 +779,12 @@ function RestaurantView({ user, profile, onLogout }) {
                   {order.status === "preparing" && <button onClick={() => updateStatus(order.id, "ready")} style={S.btn("#10b981")}>📦 Marcar listo</button>}
                   {order.status === "ready" && <div style={{ fontSize: 13, color: "#10b981", padding: "8px 0" }}>✅ Esperando repartidor...</div>}
                   {["accepted","preparing","ready"].includes(order.status) && (
-                  <WaButton
-                  phone={order.client_phone}
-                  msg={`Hola! Te escribimos desde ${restaurant.name} sobre tu pedido ${order.id}. `}
-                  label="💬 Contactar cliente"
+                    <WaButton
+                      phone={order.client_phone}
+                      msg={`Hola! Te escribimos desde ${restaurant.name} sobre tu pedido ${order.id}. `}
+                      label="💬 Contactar cliente"
                     />
-                    )}
+                  )}
                 </div>
               </div>
             ))}
@@ -875,7 +881,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
     return () => supabase.removeChannel(channel);
   }, [user.id]);
 
-   const acceptDelivery = async (order) => {
+  const acceptDelivery = async (order) => {
     const fee = parseInt(feeInput[order.id]) || 500;
     await supabase.from("orders").update({
       status: "picked",
@@ -1003,16 +1009,16 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       {order.status === "delivering" && <button onClick={() => updateStatus(order.id, "delivered")} style={{ ...S.btn("#10b981"), flex: 1 }}>✅ Confirmar entrega</button>}
                     </div>
                     <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                        <WaButton
+                      <WaButton
                         phone={order.client_phone}
                         msg={`Hola! Soy tu repartidor del pedido ${order.id}. `}
                         label="💬 Contactar cliente"
-                          />
-                          <WaButton
+                      />
+                      <WaButton
                         phone={order.restaurant_phone}
                         msg={`Hola! Soy el repartidor del pedido ${order.id}. `}
                         label="💬 Contactar restaurante"
-                          />
+                      />
                     </div>
                   </div>
                 ))}
@@ -1024,7 +1030,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                 <div style={{ marginTop: 12, fontSize: 16 }}>Sin pedidos disponibles</div>
                 <div style={{ fontSize: 13, marginTop: 6, color: "#64748b" }}>Los pedidos aparecerán acá cuando estén listos</div>
               </div>
-              )}
+            )}
             {delivered.length > 0 && (
               <>
                 <div style={{ fontSize: 12, color: "#10b981", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10, marginTop: 8 }}>✅ Entregas de hoy</div>
