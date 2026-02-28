@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-const ADMIN_EMAIL = "cirotonini30@gmail.com";
+const ADMIN_EMAILS = ["cirotonini30@gmail.com", "piligramaglia2@gmail.com"];
+const APP_NAME = "Gulita";
+const SERVICE_FEE = 500;
 
 const C = {
   primary: "#cc1f1f",
@@ -42,7 +44,7 @@ const S = {
 };
 
 const Logo = ({ size = 36 }) => (
-  <img src="/logo.png" alt="Gulita" style={{ width: size, height: size, objectFit: "contain", borderRadius: 8 }} />
+  <img src="/logo.png" alt={APP_NAME} style={{ width: size, height: size, objectFit: "contain", borderRadius: 8 }} />
 );
 
 const fp = (n) => `$${Number(n).toLocaleString("es-AR")}`;
@@ -56,6 +58,7 @@ const STATUS_CONFIG = {
   delivering: { label: "En camino a tu casa",     color: "#cc1f1f", icon: "📍" },
   delivered:  { label: "¡Entregado!",             color: "#10b981", icon: "🎉" },
   rejected:   { label: "Rechazado",               color: "#ef4444", icon: "❌" },
+  cancelled:  { label: "Cancelado",               color: "#64748b", icon: "🚫" },
 };
 
 function Badge({ status }) {
@@ -121,6 +124,28 @@ const WaButton = ({ phone, msg, label = "💬 WhatsApp" }) => {
 };
 
 // ─────────────────────────────────────────────
+// MODAL CONFIRMACION
+// ─────────────────────────────────────────────
+function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = "Confirmar", confirmColor = C.primary }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: C.card, borderRadius: 20, padding: 28, width: "100%", maxWidth: 360, border: `1px solid ${C.border}` }}>
+        <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 12, color: "#f1f5f9" }}>{title}</div>
+        <div style={{ fontSize: 14, color: "#94a3b8", marginBottom: 24, lineHeight: 1.6 }}>{message}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: 14, borderRadius: 12, border: `1px solid ${C.border}`, background: "transparent", color: "#94a3b8", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
+            Cancelar
+          </button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: `linear-gradient(135deg,${confirmColor},${confirmColor}cc)`, color: "#fff", fontWeight: 900, cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────
 function AuthScreen() {
@@ -134,9 +159,13 @@ function AuthScreen() {
     setError(""); setLoading(true);
     try {
       if (mode === "register") {
-        const { error: e } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone, role } } });
+        if (!form.phone.trim()) throw new Error("El teléfono es obligatorio");
+        const { error: e } = await supabase.auth.signUp({
+          email: form.email, password: form.password,
+          options: { data: { name: form.name, phone: form.phone, role } }
+        });
         if (e) throw e;
-        setError("✅ Revisá tu email para confirmar tu cuenta, luego iniciá sesión.");
+        setError("✅ Cuenta creada. Podés iniciar sesión.");
         setMode("login");
       } else {
         const { error: e } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
@@ -149,7 +178,7 @@ function AuthScreen() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Nunito', sans-serif" }}>
       <div style={{ animation: "float 3s ease-in-out infinite", marginBottom: 12 }}><Logo size={90} /></div>
-      <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>Gulita</div>
+      <div style={{ fontSize: 36, fontWeight: 900, color: "#f1f5f9", letterSpacing: -1 }}>{APP_NAME}</div>
       <div style={{ color: "#64748b", fontSize: 14, marginTop: 4, marginBottom: 32 }}>Tu comida favorita, en tu puerta</div>
       <div style={{ width: "100%", maxWidth: 380, background: C.card, borderRadius: 24, padding: 28, border: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", marginBottom: 24, background: "#1a0505", borderRadius: 12, padding: 4 }}>
@@ -161,7 +190,7 @@ function AuthScreen() {
           <>
             <label style={S.label}>Nombre completo</label>
             <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Juan García" style={{ ...S.input, marginBottom: 14 }} />
-            <label style={S.label}>Teléfono</label>
+            <label style={S.label}>Teléfono <span style={{ color: C.primary }}>*</span></label>
             <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 14 }} />
             <label style={S.label}>Soy...</label>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -203,12 +232,15 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "", address: initialProfile?.address || "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
+  const [showConfirmOrder, setShowConfirmOrder] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const saveProfile = async () => {
     setSavingProfile(true);
-    const { error } = await supabase.from("profiles").update(profileForm).eq("id", user.id);
+    const updates = { name: profileForm.name, phone: profileForm.phone, address: profileForm.address };
+    const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
     if (error) setProfileMsg("❌ Error: " + error.message);
-    else { setProfile(p => ({ ...p, ...profileForm })); setAddress(profileForm.address); setProfileMsg("✅ Perfil actualizado"); }
+    else { setProfile(p => ({ ...p, ...updates })); setAddress(profileForm.address); setProfileMsg("✅ Perfil actualizado"); }
     setSavingProfile(false);
     setTimeout(() => setProfileMsg(""), 3000);
   };
@@ -255,24 +287,29 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   const placeOrder = async () => {
     if (!address.trim()) { alert("Ingresá tu dirección"); return; }
     const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-
     const { data: restProfile } = await supabase
       .from("profiles").select("phone").eq("id", selectedRest.owner_id).single();
-
     const { data, error } = await supabase.from("orders").insert({
       client_id: user.id, restaurant_id: selectedRest.id,
       items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, price: c.price })),
-      total: cartTotal, delivery_fee: 500, address, pay_method: payMethod, status: "pending",
+      total: cartTotal, delivery_fee: SERVICE_FEE, address, pay_method: payMethod, status: "pending",
       client_phone: profile?.phone,
       restaurant_phone: restProfile?.phone,
     }).select().single();
-
     if (error) { alert("Error al crear pedido: " + error.message); return; }
+    setShowConfirmOrder(false);
     setTrackOrder(data); setCart([]); setScreen("tracking");
   };
 
+  const cancelOrder = async () => {
+    if (!trackOrder) return;
+    await supabase.from("orders").update({ status: "cancelled" }).eq("id", trackOrder.id);
+    setShowCancelConfirm(false);
+    setScreen("home");
+  };
+
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const activeOrders = orders.filter(o => !["delivered","rejected"].includes(o.status));
+  const activeOrders = orders.filter(o => !["delivered","rejected","cancelled"].includes(o.status));
   const filtered = restaurants.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     r.category.toLowerCase().includes(search.toLowerCase())
@@ -280,6 +317,53 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", color: "#f1f5f9", minHeight: "100%", background: C.bg }}>
+
+      {/* MODAL CONFIRMAR PEDIDO */}
+      {showConfirmOrder && (
+        <ConfirmModal
+          title="¿Confirmar pedido?"
+          message={
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                {cart.map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 13 }}>
+                    <span>x{item.qty} {item.name}</span>
+                    <span style={{ color: C.primary, fontWeight: 700 }}>{fp(item.price * item.qty)}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                  <span>Subtotal</span><span>{fp(cartTotal)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+                  <span>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}>
+                  <span>Total</span><span style={{ color: C.primary }}>{fp(cartTotal + SERVICE_FEE)}</span>
+                </div>
+              </div>
+              <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>📍 {address} · 💳 {payMethod}</div>
+            </div>
+          }
+          confirmLabel={`Pedir — ${fp(cartTotal + SERVICE_FEE)}`}
+          onConfirm={placeOrder}
+          onCancel={() => setShowConfirmOrder(false)}
+        />
+      )}
+
+      {/* MODAL CANCELAR PEDIDO */}
+      {showCancelConfirm && (
+        <ConfirmModal
+          title="¿Cancelar pedido?"
+          message="Solo podés cancelar antes de que el restaurante confirme. Si ya fue aceptado, contactalos por WhatsApp."
+          confirmLabel="Sí, cancelar"
+          confirmColor="#ef4444"
+          onConfirm={cancelOrder}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
+      )}
+
       {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, padding: "16px 20px", position: "sticky", top: 0, zIndex: 50, boxShadow: `0 4px 20px ${C.primary}66` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -292,7 +376,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
             )}
             <Logo size={32} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 20 }}>Gulita</div>
+              <div style={{ fontWeight: 900, fontSize: 20 }}>{APP_NAME}</div>
               <div style={{ fontSize: 12, opacity: 0.85 }}>👤 {profile?.name}</div>
             </div>
           </div>
@@ -382,7 +466,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               </div>
               <div style={{ padding: "14px 20px", textAlign: "center" }}>
                 <div style={{ fontWeight: 900, fontSize: 22 }}>{selectedRest.name}</div>
-                <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Envío $500</div>
+                <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Cargo de servicio {fp(SERVICE_FEE)}</div>
               </div>
             </div>
             {menuItems.length === 0 ? (
@@ -442,10 +526,12 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
             ))}
             <div style={S.card}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ color: "#94a3b8" }}>Subtotal</span><span>{fp(cartTotal)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}><span style={{ color: "#94a3b8" }}>Envío</span><span>$500</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ color: "#94a3b8" }}>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span>
+              </div>
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 800, fontSize: 18 }}>Total</span>
-                <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(cartTotal + 500)}</span>
+                <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(cartTotal + SERVICE_FEE)}</span>
               </div>
             </div>
             <label style={S.label}>📍 Dirección de entrega</label>
@@ -458,8 +544,9 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </button>
               ))}
             </div>
-            <button onClick={placeOrder} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 16, padding: 18, color: "#fff", fontWeight: 900, fontSize: 17, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 20px ${C.primary}80` }}>
-              🚀 Confirmar pedido — {fp(cartTotal + 500)}
+            <button onClick={() => { if (!address.trim()) { alert("Ingresá tu dirección"); return; } setShowConfirmOrder(true); }}
+              style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 16, padding: 18, color: "#fff", fontWeight: 900, fontSize: 17, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 20px ${C.primary}80` }}>
+              🚀 Confirmar pedido — {fp(cartTotal + SERVICE_FEE)}
             </button>
           </>
         )}
@@ -475,19 +562,20 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               </div>
               {["picked","delivering"].includes(trackOrder.status) && (
                 <div style={{ marginBottom: 12 }}>
-                  <WaButton
-                    phone={trackOrder.delivery_phone}
-                    msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `}
-                    label="💬 Contactar repartidor"
-                  />
+                  <WaButton phone={trackOrder.delivery_phone} msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `} label="💬 Contactar repartidor" />
                 </div>
               )}
               <ProgressBar status={trackOrder.status} />
-              {!["delivered","rejected"].includes(trackOrder.status) && (
+              {!["delivered","rejected","cancelled"].includes(trackOrder.status) && (
                 <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
                   <div style={{ fontSize: 13, color: "#64748b" }}>Tiempo estimado</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: C.primary }}>{trackOrder.prep_time} min</div>
                 </div>
+              )}
+              {trackOrder.status === "pending" && (
+                <button onClick={() => setShowCancelConfirm(true)} style={{ ...S.btn("#ef4444"), width: "100%", marginTop: 14, padding: 12, fontSize: 14 }}>
+                  🚫 Cancelar pedido
+                </button>
               )}
             </div>
             <div style={S.card}>
@@ -497,7 +585,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </div>
               ))}
               <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#94a3b8" }}>Envío</span><span>{fp(trackOrder.delivery_fee)}</span>
+                <span style={{ color: "#94a3b8" }}>Cargo por servicio</span><span>{fp(trackOrder.delivery_fee)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
                 <span style={{ fontWeight: 800 }}>Total</span><span style={{ fontWeight: 900, color: C.primary }}>{fp(trackOrder.total + trackOrder.delivery_fee)}</span>
@@ -530,6 +618,7 @@ function RestaurantView({ user, profile, onLogout }) {
   const [restProfileForm, setRestProfileForm] = useState({ name: "", category: "", delivery_time: "" });
   const [savingRestProfile, setSavingRestProfile] = useState(false);
   const [restProfileMsg, setRestProfileMsg] = useState("");
+  const [commissionRate, setCommissionRate] = useState(10);
 
   useEffect(() => {
     const load = async () => {
@@ -555,7 +644,15 @@ function RestaurantView({ user, profile, onLogout }) {
       setLoading(false);
     };
     load();
+    // Cargar comisión actual
+    supabase.from("app_config").select("value").eq("key", "commission_rate").single()
+      .then(({ data }) => { if (data) setCommissionRate(parseFloat(data.value)); });
   }, [user.id]);
+
+  const netAmount = (total) => {
+    const commission = Math.round(total * commissionRate / 100);
+    return { net: total - commission, commission };
+  };
 
   const createRestaurant = async () => {
     if (!restForm.name) return;
@@ -584,9 +681,7 @@ function RestaurantView({ user, profile, onLogout }) {
       await supabase.from("restaurants").update({ photo_url: urlData.publicUrl }).eq("id", restaurant.id);
       setRestaurant(p => ({ ...p, photo_url: urlData.publicUrl }));
       setRestProfileMsg("✅ Foto actualizada");
-    } else {
-      setRestProfileMsg("❌ Error al subir foto: " + error.message);
-    }
+    } else { setRestProfileMsg("❌ Error al subir foto: " + error.message); }
     setUploadingPhoto(false);
     setTimeout(() => setRestProfileMsg(""), 3000);
   };
@@ -634,7 +729,7 @@ function RestaurantView({ user, profile, onLogout }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <Logo size={64} />
           <div style={{ fontWeight: 900, fontSize: 24, marginTop: 8 }}>Configurá tu restaurante</div>
-          <div style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>Será revisado antes de aparecer en la app</div>
+          <div style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>Será revisado antes de aparecer en {APP_NAME}</div>
         </div>
         <div style={{ background: C.card, borderRadius: 20, padding: 24 }}>
           <input value={restForm.name} onChange={e => setRestForm(p => ({ ...p, name: e.target.value }))} placeholder="Nombre del restaurante" style={{ ...S.input, marginBottom: 12 }} />
@@ -657,12 +752,17 @@ function RestaurantView({ user, profile, onLogout }) {
         <div style={{ fontSize: 64 }}>⏳</div>
         <div style={{ fontWeight: 900, fontSize: 22, marginTop: 16, color: C.accent }}>Pendiente de aprobación</div>
         <div style={{ color: "#64748b", fontSize: 15, marginTop: 12, lineHeight: 1.6 }}>
-          Tu restaurante <strong style={{ color: "#f1f5f9" }}>{restaurant.name}</strong> fue registrado y está siendo revisado.
+          Tu restaurante <strong style={{ color: "#f1f5f9" }}>{restaurant.name}</strong> fue registrado y está siendo revisado por {APP_NAME}.
         </div>
         <button onClick={onLogout} style={{ ...S.btn(C.border), marginTop: 24, padding: "12px 24px", fontSize: 15 }}>Cerrar sesión</button>
       </div>
     </div>
   );
+
+  const activeOrders = orders.filter(o => !["delivered","rejected","cancelled"].includes(o.status));
+  const totalCommissionHoy = orders
+    .filter(o => o.status === "delivered" && new Date(o.created_at).toDateString() === new Date().toDateString())
+    .reduce((s, o) => s + Math.round(o.total * commissionRate / 100), 0);
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", color: "#f1f5f9", minHeight: "100%", background: C.bg }}>
@@ -672,7 +772,7 @@ function RestaurantView({ user, profile, onLogout }) {
             <Logo size={30} />
             <div>
               <div style={{ fontWeight: 900, fontSize: 18 }}>{restaurant.name}</div>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>Panel de cocina · {profile?.name}</div>
+              <div style={{ fontSize: 13, opacity: 0.8 }}>Panel · {APP_NAME} · {profile?.name}</div>
             </div>
           </div>
           <button onClick={onLogout} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>Salir</button>
@@ -702,6 +802,27 @@ function RestaurantView({ user, profile, onLogout }) {
                 <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleRestPhotoUpload} disabled={uploadingPhoto} />
               </label>
             </div>
+            {/* AVISO COMISIÓN */}
+            <div style={{ ...S.card, border: `1px solid ${C.accent}55`, background: C.accent + "11" }}>
+              <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 8, color: C.accent }}>💰 Comisión de la plataforma</div>
+              <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>
+                {APP_NAME} cobra una comisión del <strong style={{ color: C.accent }}>{commissionRate}%</strong> sobre el subtotal de cada pedido.
+                Este porcentaje es configurado por la administración y puede variar.
+              </div>
+              <div style={{ marginTop: 12, padding: "10px 14px", background: "#1a0505", borderRadius: 10, fontSize: 13 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ color: "#64748b" }}>Ejemplo — pedido de $5.000</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#94a3b8" }}>Comisión ({commissionRate}%)</span>
+                  <span style={{ color: "#ef4444" }}>-{fp(5000 * commissionRate / 100)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, marginTop: 4 }}>
+                  <span>Recibís</span>
+                  <span style={{ color: "#10b981" }}>{fp(5000 - 5000 * commissionRate / 100)}</span>
+                </div>
+              </div>
+            </div>
             <div style={S.card}>
               <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14 }}>🍽️ Datos del restaurante</div>
               <label style={S.label}>Nombre</label>
@@ -721,7 +842,7 @@ function RestaurantView({ user, profile, onLogout }) {
         {/* PEDIDOS */}
         {tab === "orders" && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
               {[
                 { label: "Pendientes", count: orders.filter(o => o.status === "pending").length, color: C.accent },
                 { label: "En cocina", count: orders.filter(o => ["accepted","preparing"].includes(o.status)).length, color: C.primary },
@@ -733,61 +854,76 @@ function RestaurantView({ user, profile, onLogout }) {
                 </div>
               ))}
             </div>
-            {orders.filter(o => !["delivered","rejected"].includes(o.status)).length === 0 && (
+            {/* RESUMEN COMISIÓN HOY */}
+            {totalCommissionHoy > 0 && (
+              <div style={{ background: C.accent + "11", border: `1px solid ${C.accent}44`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#94a3b8" }}>💰 Comisión {APP_NAME} hoy ({commissionRate}%)</span>
+                <span style={{ color: C.accent, fontWeight: 800 }}>{fp(totalCommissionHoy)}</span>
+              </div>
+            )}
+            {activeOrders.length === 0 && (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={52} /><div style={{ marginTop: 12 }}>No hay pedidos activos</div></div>
             )}
-            {orders.filter(o => !["delivered","rejected"].includes(o.status)).map(order => (
-              <div key={order.id} style={{ ...S.card, border: `1px solid ${(STATUS_CONFIG[order.status] || STATUS_CONFIG.pending).color}44` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 17 }}>{order.id}</div>
-                    <div style={{ fontSize: 13, color: "#64748b" }}>📍 {order.address}</div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>💳 {order.pay_method}</div>
-                  </div>
-                  <Badge status={order.status} />
-                </div>
-                <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-                  {order.items?.map((item, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
-                      <span>x{item.qty} {item.name}</span>
-                      <span style={{ color: C.primary, fontWeight: 700 }}>{fp(item.price * item.qty)}</span>
+            {activeOrders.map(order => {
+              const { net, commission } = netAmount(order.total);
+              return (
+                <div key={order.id} style={{ ...S.card, border: `1px solid ${(STATUS_CONFIG[order.status] || STATUS_CONFIG.pending).color}44` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 17 }}>{order.id}</div>
+                      <div style={{ fontSize: 13, color: "#64748b" }}>📍 {order.address}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>💳 {order.pay_method}</div>
                     </div>
-                  ))}
-                  <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
-                    <span>Total</span><span>{fp(order.total)}</span>
+                    <Badge status={order.status} />
+                  </div>
+                  <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                    {order.items?.map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
+                        <span>x{item.qty} {item.name}</span>
+                        <span style={{ color: C.primary, fontWeight: 700 }}>{fp(item.price * item.qty)}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 8, paddingTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "#64748b" }}>Total pedido</span><span>{fp(order.total)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "#ef4444" }}>Comisión {APP_NAME} ({commissionRate}%)</span>
+                        <span style={{ color: "#ef4444" }}>-{fp(commission)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, marginTop: 4 }}>
+                        <span>Recibís</span><span style={{ color: "#10b981" }}>{fp(net)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>⏱</span>
+                    {editingPrepTime === order.id ? (
+                      <>
+                        <input value={newPrepTime} onChange={e => setNewPrepTime(e.target.value)} type="number" style={{ width: 60, padding: "4px 8px", background: "#1a0505", border: `1px solid ${C.primary}`, borderRadius: 8, color: "#f1f5f9", fontFamily: "'Nunito', sans-serif", fontSize: 14 }} />
+                        <span style={{ fontSize: 13, color: "#64748b" }}>min</span>
+                        <button onClick={() => updatePrepTime(order.id)} style={S.btn("#10b981")}>✓</button>
+                        <button onClick={() => setEditingPrepTime(null)} style={S.btn("#ef4444")}>✕</button>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: C.primary, fontWeight: 800 }}>{order.prep_time} min</span>
+                        <button onClick={() => { setEditingPrepTime(order.id); setNewPrepTime(order.prep_time); }} style={S.btn(C.border)}>Ajustar</button>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {order.status === "pending" && (<><button onClick={() => updateStatus(order.id, "accepted")} style={S.btn(C.primary)}>✅ Aceptar</button><button onClick={() => updateStatus(order.id, "rejected")} style={S.btn("#ef4444")}>✕ Rechazar</button></>)}
+                    {order.status === "accepted" && <button onClick={() => updateStatus(order.id, "preparing")} style={S.btn(C.primary)}>👨‍🍳 Iniciar preparación</button>}
+                    {order.status === "preparing" && <button onClick={() => updateStatus(order.id, "ready")} style={S.btn("#10b981")}>📦 Marcar listo</button>}
+                    {order.status === "ready" && <div style={{ fontSize: 13, color: "#10b981", padding: "8px 0" }}>✅ Esperando repartidor...</div>}
+                    {["accepted","preparing","ready"].includes(order.status) && (
+                      <WaButton phone={order.client_phone} msg={`Hola! Te escribimos desde ${restaurant.name} sobre tu pedido ${order.id}. `} label="💬 Contactar cliente" />
+                    )}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: "#64748b" }}>⏱</span>
-                  {editingPrepTime === order.id ? (
-                    <>
-                      <input value={newPrepTime} onChange={e => setNewPrepTime(e.target.value)} type="number" style={{ width: 60, padding: "4px 8px", background: "#1a0505", border: `1px solid ${C.primary}`, borderRadius: 8, color: "#f1f5f9", fontFamily: "'Nunito', sans-serif", fontSize: 14 }} />
-                      <span style={{ fontSize: 13, color: "#64748b" }}>min</span>
-                      <button onClick={() => updatePrepTime(order.id)} style={S.btn("#10b981")}>✓</button>
-                      <button onClick={() => setEditingPrepTime(null)} style={S.btn("#ef4444")}>✕</button>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: C.primary, fontWeight: 800 }}>{order.prep_time} min</span>
-                      <button onClick={() => { setEditingPrepTime(order.id); setNewPrepTime(order.prep_time); }} style={S.btn(C.border)}>Ajustar</button>
-                    </>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {order.status === "pending" && (<><button onClick={() => updateStatus(order.id, "accepted")} style={S.btn(C.primary)}>✅ Aceptar</button><button onClick={() => updateStatus(order.id, "rejected")} style={S.btn("#ef4444")}>✕ Rechazar</button></>)}
-                  {order.status === "accepted" && <button onClick={() => updateStatus(order.id, "preparing")} style={S.btn(C.primary)}>👨‍🍳 Iniciar preparación</button>}
-                  {order.status === "preparing" && <button onClick={() => updateStatus(order.id, "ready")} style={S.btn("#10b981")}>📦 Marcar listo</button>}
-                  {order.status === "ready" && <div style={{ fontSize: 13, color: "#10b981", padding: "8px 0" }}>✅ Esperando repartidor...</div>}
-                  {["accepted","preparing","ready"].includes(order.status) && (
-                    <WaButton
-                      phone={order.client_phone}
-                      msg={`Hola! Te escribimos desde ${restaurant.name} sobre tu pedido ${order.id}. `}
-                      label="💬 Contactar cliente"
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
 
@@ -812,6 +948,7 @@ function RestaurantView({ user, profile, onLogout }) {
                     <div style={{ fontWeight: 700 }}>{item.name}</div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>{item.description}</div>
                     <div style={{ color: C.primary, fontWeight: 700, marginTop: 2 }}>{fp(item.price)}</div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>Recibís: {fp(item.price - item.price * commissionRate / 100)}</div>
                   </div>
                 </div>
                 <button onClick={() => deleteMenuItem(item.id)} style={S.btn("#ef4444")}>Eliminar</button>
@@ -852,9 +989,10 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
 
   const saveProfile = async () => {
     setSavingProfile(true);
-    const { error } = await supabase.from("profiles").update(profileForm).eq("id", user.id);
+    const updates = { name: profileForm.name, phone: profileForm.phone, mp_link: profileForm.mp_link };
+    const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
     if (error) setProfileMsg("❌ Error: " + error.message);
-    else { setProfile(p => ({ ...p, ...profileForm })); setProfileMsg("✅ Perfil actualizado"); }
+    else { setProfile(p => ({ ...p, ...updates })); setProfileMsg("✅ Perfil actualizado"); }
     setSavingProfile(false);
     setTimeout(() => setProfileMsg(""), 3000);
   };
@@ -884,10 +1022,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
   const acceptDelivery = async (order) => {
     const fee = parseInt(feeInput[order.id]) || 500;
     await supabase.from("orders").update({
-      status: "picked",
-      delivery_id: user.id,
-      delivery_fee: fee,
-      delivery_phone: profile?.phone,
+      status: "picked", delivery_id: user.id, delivery_fee: fee, delivery_phone: profile?.phone,
     }).eq("id", order.id);
   };
 
@@ -895,7 +1030,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
 
   if (loading) return <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><Spinner /></div>;
 
-  const active = myDeliveries.filter(o => !["delivered","rejected"].includes(o.status));
+  const active = myDeliveries.filter(o => !["delivered","rejected","cancelled"].includes(o.status));
   const delivered = myDeliveries.filter(o => o.status === "delivered");
 
   return (
@@ -905,7 +1040,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Logo size={30} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>🛵 Panel Repartidor</div>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>🛵 {APP_NAME} Repartidor</div>
               <div style={{ fontSize: 13, opacity: 0.8 }}>{profile?.name} · En línea</div>
             </div>
           </div>
@@ -920,7 +1055,6 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
           ))}
         </div>
 
-        {/* PERFIL REPARTIDOR */}
         {tab === "profile" && (
           <div style={S.card}>
             <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 16 }}>⚙️ Mi perfil</div>
@@ -931,7 +1065,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
             <label style={S.label}>Link de MercadoPago</label>
             <input value={profileForm.mp_link} onChange={e => setProfileForm(p => ({ ...p, mp_link: e.target.value }))} placeholder="Ej: juan.garcia.mp" style={{ ...S.input, marginBottom: 8 }} />
             <div style={{ fontSize: 12, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>
-              💡 Los clientes que paguen con débito recibirán este link para pagarte directo a vos.
+              💡 Los clientes que paguen con débito recibirán este link para pagarte.
             </div>
             <SaveMsg msg={profileMsg} />
             <button onClick={saveProfile} disabled={savingProfile} style={{ width: "100%", background: savingProfile ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
@@ -957,7 +1091,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
             {!profile?.mp_link && (
               <div onClick={() => setTab("profile")} style={{ background: C.primary + "22", border: `1px solid ${C.primary}`, borderRadius: 12, padding: 14, marginBottom: 16, cursor: "pointer" }}>
                 <div style={{ fontWeight: 700, color: C.primary }}>⚠️ Configurá tu link de MercadoPago</div>
-                <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>Tocá acá para agregar tu link de cobro por débito.</div>
+                <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>Tocá acá para agregar tu link de cobro.</div>
               </div>
             )}
             {orders.length > 0 && (
@@ -977,7 +1111,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       {order.items?.map((item, i) => <div key={i} style={{ fontSize: 13, color: "#64748b" }}>x{item.qty} {item.name}</div>)}
                     </div>
                     <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-                      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>💰 Tu precio de envío:</div>
+                      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>💰 Tu cargo de envío:</div>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <input type="number" value={feeInput[order.id] || ""} onChange={e => setFeeInput(p => ({ ...p, [order.id]: e.target.value }))} placeholder="500" style={{ ...S.input, width: 100, textAlign: "center" }} />
                         <span style={{ fontSize: 13, color: "#64748b" }}>→ Total: {fp(order.total + (parseInt(feeInput[order.id]) || 500))}</span>
@@ -1000,7 +1134,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                         <div style={{ fontWeight: 800 }}>{order.id}</div>
                         <div style={{ fontSize: 14, color: C.accent, fontWeight: 700 }}>📍 {order.address}</div>
                         <div style={{ fontSize: 13, color: "#64748b" }}>💰 Cobrar: <strong style={{ color: "#f1f5f9" }}>{fp(order.total + order.delivery_fee)}</strong> ({order.pay_method})</div>
-                        <div style={{ fontSize: 12, color: "#64748b" }}>Tu fee: {fp(order.delivery_fee)}</div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>Tu cargo: {fp(order.delivery_fee)}</div>
                       </div>
                       <Badge status={order.status} />
                     </div>
@@ -1009,16 +1143,8 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       {order.status === "delivering" && <button onClick={() => updateStatus(order.id, "delivered")} style={{ ...S.btn("#10b981"), flex: 1 }}>✅ Confirmar entrega</button>}
                     </div>
                     <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                      <WaButton
-                        phone={order.client_phone}
-                        msg={`Hola! Soy tu repartidor del pedido ${order.id}. `}
-                        label="💬 Contactar cliente"
-                      />
-                      <WaButton
-                        phone={order.restaurant_phone}
-                        msg={`Hola! Soy el repartidor del pedido ${order.id}. `}
-                        label="💬 Contactar restaurante"
-                      />
+                      <WaButton phone={order.client_phone} msg={`Hola! Soy tu repartidor del pedido ${order.id}. `} label="💬 Contactar cliente" />
+                      <WaButton phone={order.restaurant_phone} msg={`Hola! Soy el repartidor del pedido ${order.id}. `} label="💬 Contactar restaurante" />
                     </div>
                   </div>
                 ))}
@@ -1060,15 +1186,32 @@ function AdminView({ onLogout }) {
   const [restaurants, setRestaurants] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [commissionRate, setCommissionRate] = useState("10");
+  const [savingCommission, setSavingCommission] = useState(false);
+  const [commissionMsg, setCommissionMsg] = useState("");
 
   useEffect(() => {
     const load = async () => {
       const { data: rests } = await supabase.from("restaurants").select("*, profiles(name, phone)").order("created_at", { ascending: false });
       const { data: profs } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      setRestaurants(rests || []); setUsers(profs || []); setLoading(false);
+      const { data: config } = await supabase.from("app_config").select("value").eq("key", "commission_rate").single();
+      setRestaurants(rests || []); setUsers(profs || []);
+      if (config) setCommissionRate(config.value);
+      setLoading(false);
     };
     load();
   }, []);
+
+  const saveCommission = async () => {
+    setSavingCommission(true);
+    const val = parseFloat(commissionRate);
+    if (isNaN(val) || val < 0 || val > 100) { setCommissionMsg("❌ Valor inválido (0-100)"); setSavingCommission(false); return; }
+    const { error } = await supabase.from("app_config").upsert({ key: "commission_rate", value: String(val), updated_at: new Date().toISOString() });
+    if (error) setCommissionMsg("❌ Error: " + error.message);
+    else setCommissionMsg("✅ Comisión actualizada a " + val + "%");
+    setSavingCommission(false);
+    setTimeout(() => setCommissionMsg(""), 3000);
+  };
 
   const approveRestaurant = async (id, approved) => {
     if (!approved) {
@@ -1090,7 +1233,7 @@ function AdminView({ onLogout }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Logo size={34} />
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>Panel Admin · Gulita</div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>Panel Admin · {APP_NAME}</div>
               <div style={{ fontSize: 12, color: "#64748b" }}>Control total de la plataforma</div>
             </div>
           </div>
@@ -1111,11 +1254,35 @@ function AdminView({ onLogout }) {
             </div>
           ))}
         </div>
+
+        {/* CONFIGURACIÓN COMISIÓN */}
+        <div style={{ ...S.card, border: `1px solid ${C.accent}55`, marginBottom: 20 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14, color: C.accent }}>💰 Comisión de la plataforma</div>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>
+            Este porcentaje se descuenta del total de cada pedido. Los restaurantes ven el monto neto que reciben.
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input
+                type="number" value={commissionRate} onChange={e => setCommissionRate(e.target.value)}
+                min="0" max="100" step="0.5"
+                style={{ ...S.input, paddingRight: 40 }}
+              />
+              <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700 }}>%</span>
+            </div>
+            <button onClick={saveCommission} disabled={savingCommission} style={{ ...S.btn(C.primary), padding: "10px 20px", fontSize: 14 }}>
+              {savingCommission ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+          {commissionMsg && <div style={{ marginTop: 10 }}><SaveMsg msg={commissionMsg} /></div>}
+        </div>
+
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           {[["restaurants","🍽️ Restaurantes"],["users","👥 Usuarios"]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: tab === key ? `linear-gradient(135deg,${C.primary},${C.primaryDark})` : C.card, color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
           ))}
         </div>
+
         {loading ? <Spinner /> : (
           <>
             {tab === "restaurants" && (
@@ -1231,7 +1398,7 @@ export default function App() {
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
 
   return (
     <>
@@ -1245,7 +1412,7 @@ export default function App() {
       {loading ? (
         <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
           <div style={{ animation: "float 1.5s ease-in-out infinite" }}><Logo size={80} /></div>
-          <div style={{ color: C.primary, fontSize: 28, fontWeight: 900, marginTop: 12 }}>Gulita</div>
+          <div style={{ color: C.primary, fontSize: 28, fontWeight: 900, marginTop: 12 }}>{APP_NAME}</div>
           <div style={{ marginTop: 20 }}><Spinner /></div>
         </div>
       ) : !session ? (
