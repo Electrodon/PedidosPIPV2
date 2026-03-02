@@ -675,18 +675,16 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </div>
               )}
               <ProgressBar status={trackOrder.status} />
-              {/* Botón contactar restaurante */}
-              {!["delivered","rejected","cancelled"].includes(trackOrder.status) && trackOrder.restaurant_phone && (
-                <div style={{ marginTop: 10 }}>
-                  <WaButton 
-                    phone={trackOrder.restaurant_phone} 
-                    msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `} 
-                    label="💬 Contactar restaurante" 
-                  />
-                </div>
-              )}
               {!["delivered","rejected","cancelled"].includes(trackOrder.status) && (
-                <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
+                  <div style={{ marginTop: 10 }}>
+                      <WaButton 
+                        phone={trackOrder.restaurant_phone} 
+                        msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `} 
+                        label="💬 Contactar restaurante" 
+                      />
+                    </div>
+                  )}
+                  <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
                   <div style={{ fontSize: 13, color: "#64748b" }}>Tiempo estimado</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: C.primary }}>{trackOrder.prep_time} min</div>
                 </div>
