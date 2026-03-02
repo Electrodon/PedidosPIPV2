@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 const ADMIN_EMAILS = ["cirotonini30@gmail.com", "piligramaglia2@gmail.com"];
 const APP_NAME = "Gulita";
 const SERVICE_FEE = 500;
+const MP_ALIAS = "pili.mp";
 
 const C = {
   primary: "#cc1f1f",
@@ -110,11 +111,11 @@ const waLink = (phone, msg) => {
   return `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
 };
 
-const WaButton = ({ phone, msg, label = "💬 WhatsApp" }) => {
+const WaButton = ({ phone, msg, label = "💬 WhatsApp", style = {} }) => {
   if (!phone) return null;
   return (
     <a href={waLink(phone, msg)} target="_blank" rel="noopener noreferrer"
-      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#25d366", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif", textDecoration: "none" }}>
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#25d366", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13, fontFamily: "'Nunito', sans-serif", textDecoration: "none", ...style }}>
       {label}
     </a>
   );
@@ -129,6 +130,66 @@ function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = "Con
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel} style={{ flex: 1, padding: 14, borderRadius: 12, border: `1px solid ${C.border}`, background: "transparent", color: "#94a3b8", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>Cancelar</button>
           <button onClick={onConfirm} style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: `linear-gradient(135deg,${confirmColor},${confirmColor}cc)`, color: "#fff", fontWeight: 900, cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MODAL MERCADOPAGO DÉBITO
+// ─────────────────────────────────────────────
+function MercadoPagoModal({ total, onConfirm, onCancel }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: C.card, borderRadius: 24, padding: 28, width: "100%", maxWidth: 380, border: `1px solid #009ee344` }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ background: "#009ee322", borderRadius: 14, width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>💳</div>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: "#f1f5f9" }}>Pago con débito</div>
+            <div style={{ fontSize: 13, color: "#64748b" }}>Transferencia por MercadoPago</div>
+          </div>
+        </div>
+
+        {/* Instrucciones */}
+        <div style={{ background: "#009ee311", border: "1px solid #009ee344", borderRadius: 16, padding: 18, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 14, lineHeight: 1.6 }}>
+            Realizá la transferencia <strong style={{ color: "#f1f5f9" }}>antes de que llegue el repartidor</strong>:
+          </div>
+
+          {/* Alias */}
+          <div style={{ background: "#1a0505", borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Alias</div>
+              <div style={{ fontWeight: 900, fontSize: 20, color: "#009ee3", letterSpacing: 1 }}>{MP_ALIAS}</div>
+            </div>
+            <div style={{ fontSize: 28 }}>📲</div>
+          </div>
+
+          {/* Monto */}
+          <div style={{ background: "#1a0505", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Monto a transferir</div>
+              <div style={{ fontWeight: 900, fontSize: 24, color: C.primary }}>{fp(total)}</div>
+            </div>
+            <div style={{ fontSize: 28 }}>💰</div>
+          </div>
+        </div>
+
+        {/* Aviso comprobante */}
+        <div style={{ background: "#25d36622", border: "1px solid #25d36655", borderRadius: 12, padding: "10px 14px", marginBottom: 20, fontSize: 13, color: "#25d366", lineHeight: 1.6 }}>
+          📎 Una vez que llegue el repartidor, enviá el comprobante por WhatsApp usando el botón en el seguimiento del pedido.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button onClick={onConfirm} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            ✅ Entendido, hacer pedido
+          </button>
+          <button onClick={onCancel} style={{ width: "100%", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, color: "#64748b", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            Volver
+          </button>
         </div>
       </div>
     </div>
@@ -204,7 +265,7 @@ function AuthScreen() {
 }
 
 // ─────────────────────────────────────────────
-// DELIVERY — PANTALLA PENDIENTE
+// DELIVERY PENDING
 // ─────────────────────────────────────────────
 function DeliveryPendingScreen({ profile, onLogout }) {
   return (
@@ -250,6 +311,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
   const [showConfirmOrder, setShowConfirmOrder] = useState(false);
+  const [showMPModal, setShowMPModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const saveProfile = async () => {
@@ -313,6 +375,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
     }).select().single();
     if (error) { alert("Error al crear pedido: " + error.message); return; }
     setShowConfirmOrder(false);
+    setShowMPModal(false);
     setTrackOrder(data); setCart([]); setScreen("tracking");
   };
 
@@ -323,7 +386,18 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
     setScreen("home");
   };
 
+  // Al tocar "Confirmar pedido" en el carrito
+  const handleCheckout = () => {
+    if (!address.trim()) { alert("Ingresá tu dirección"); return; }
+    if (payMethod === "Débito") {
+      setShowMPModal(true);
+    } else {
+      setShowConfirmOrder(true);
+    }
+  };
+
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalConServicio = cartTotal + SERVICE_FEE;
   const activeOrders = orders.filter(o => !["delivered","rejected","cancelled"].includes(o.status));
   const filtered = restaurants.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -332,6 +406,17 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif", color: "#f1f5f9", minHeight: "100%", background: C.bg }}>
+
+      {/* MODAL MP DÉBITO */}
+      {showMPModal && (
+        <MercadoPagoModal
+          total={totalConServicio}
+          onConfirm={() => { setShowMPModal(false); setShowConfirmOrder(true); }}
+          onCancel={() => setShowMPModal(false)}
+        />
+      )}
+
+      {/* MODAL CONFIRMAR PEDIDO */}
       {showConfirmOrder && (
         <ConfirmModal
           title="¿Confirmar pedido?"
@@ -348,16 +433,23 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>Subtotal</span><span>{fp(cartTotal)}</span></div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}><span>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}><span>Total</span><span style={{ color: C.primary }}>{fp(cartTotal + SERVICE_FEE)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}><span>Total</span><span style={{ color: C.primary }}>{fp(totalConServicio)}</span></div>
               </div>
               <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>📍 {address} · 💳 {payMethod}</div>
+              {payMethod === "Débito" && (
+                <div style={{ marginTop: 10, background: "#009ee311", border: "1px solid #009ee344", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#009ee3" }}>
+                  💳 Recordá transferir {fp(totalConServicio)} al alias <strong>{MP_ALIAS}</strong>
+                </div>
+              )}
             </div>
           }
-          confirmLabel={`Pedir — ${fp(cartTotal + SERVICE_FEE)}`}
+          confirmLabel={`Pedir — ${fp(totalConServicio)}`}
           onConfirm={placeOrder}
           onCancel={() => setShowConfirmOrder(false)}
         />
       )}
+
+      {/* MODAL CANCELAR */}
       {showCancelConfirm && (
         <ConfirmModal
           title="¿Cancelar pedido?"
@@ -369,6 +461,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
         />
       )}
 
+      {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, padding: "16px 20px", position: "sticky", top: 0, zIndex: 50, boxShadow: `0 4px 20px ${C.primary}66` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -399,6 +492,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
       </div>
 
       <div style={{ padding: 16, maxWidth: 600, margin: "0 auto", paddingBottom: 90 }}>
+
         {screen === "profile" && (
           <>
             <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 16, marginTop: 4 }}>⚙️ Mi perfil</div>
@@ -519,22 +613,26 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}><span style={{ color: "#94a3b8" }}>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 800, fontSize: 18 }}>Total</span>
-                <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(cartTotal + SERVICE_FEE)}</span>
+                <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(totalConServicio)}</span>
               </div>
             </div>
             <label style={S.label}>📍 Dirección de entrega</label>
             <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ej: San Martín 456" style={{ ...S.input, marginBottom: 16 }} />
             <label style={{ ...S.label, marginTop: 4 }}>💳 Método de pago</label>
-            <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
               {["Efectivo","Débito"].map(m => (
-                <button key={m} onClick={() => setPayMethod(m)} style={{ flex: 1, padding: 12, borderRadius: 12, border: payMethod === m ? `2px solid ${C.primary}` : `1px solid ${C.border}`, background: payMethod === m ? C.primary + "22" : C.card, color: payMethod === m ? C.primary : "#94a3b8", cursor: "pointer", fontWeight: 700, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
+                <button key={m} onClick={() => setPayMethod(m)} style={{ flex: 1, padding: 12, borderRadius: 12, border: payMethod === m ? `2px solid ${m === "Débito" ? "#009ee3" : C.primary}` : `1px solid ${C.border}`, background: payMethod === m ? (m === "Débito" ? "#009ee322" : C.primary + "22") : C.card, color: payMethod === m ? (m === "Débito" ? "#009ee3" : C.primary) : "#94a3b8", cursor: "pointer", fontWeight: 700, fontFamily: "'Nunito', sans-serif", fontSize: 14 }}>
                   {m === "Efectivo" ? "💵" : "💳"} {m}
                 </button>
               ))}
             </div>
-            <button onClick={() => { if (!address.trim()) { alert("Ingresá tu dirección"); return; } setShowConfirmOrder(true); }}
-              style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 16, padding: 18, color: "#fff", fontWeight: 900, fontSize: 17, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 20px ${C.primary}80` }}>
-              🚀 Confirmar pedido — {fp(cartTotal + SERVICE_FEE)}
+            {payMethod === "Débito" && (
+              <div style={{ background: "#009ee311", border: "1px solid #009ee344", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#009ee3", lineHeight: 1.6 }}>
+                💳 Se te mostrará el alias de MercadoPago al confirmar el pedido.
+              </div>
+            )}
+            <button onClick={handleCheckout} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 16, padding: 18, color: "#fff", fontWeight: 900, fontSize: 17, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 20px ${C.primary}80`, marginTop: 4 }}>
+              🚀 Confirmar pedido — {fp(totalConServicio)}
             </button>
           </>
         )}
@@ -542,12 +640,36 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
         {screen === "tracking" && trackOrder && (
           <>
             <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 16, marginTop: 4 }}>📍 Seguimiento en vivo</div>
+
+            {/* AVISO PAGO DÉBITO cuando el repartidor fue asignado */}
+            {trackOrder.pay_method === "Débito" && ["picked","delivering"].includes(trackOrder.status) && trackOrder.delivery_phone && (
+              <div style={{ background: "#009ee311", border: "1px solid #009ee366", borderRadius: 16, padding: 16, marginBottom: 14 }}>
+                <div style={{ fontWeight: 800, color: "#009ee3", marginBottom: 8, fontSize: 15 }}>💳 Enviá el comprobante de pago</div>
+                <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 12, lineHeight: 1.6 }}>
+                  El repartidor está en camino. Enviá el comprobante de la transferencia de <strong style={{ color: "#f1f5f9" }}>{fp(trackOrder.total + trackOrder.delivery_fee)}</strong> al alias <strong style={{ color: "#009ee3" }}>{MP_ALIAS}</strong> por WhatsApp.
+                </div>
+                <WaButton
+                  phone={trackOrder.delivery_phone}
+                  msg={`Hola! Te mando el comprobante de transferencia por MercadoPago del pedido ${trackOrder.id} por ${fp(trackOrder.total + trackOrder.delivery_fee)} al alias ${MP_ALIAS}. [Adjuntá la imagen del comprobante acá 👇]`}
+                  label="📎 Enviar comprobante por WhatsApp"
+                  style={{ width: "100%", justifyContent: "center", padding: "12px 16px", fontSize: 14, background: "#009ee3" }}
+                />
+              </div>
+            )}
+
+            {/* AVISO DÉBITO pendiente (repartidor no asignado aún) */}
+            {trackOrder.pay_method === "Débito" && !["picked","delivering","delivered"].includes(trackOrder.status) && (
+              <div style={{ background: "#009ee311", border: "1px solid #009ee344", borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#009ee3", lineHeight: 1.6 }}>
+                💳 Recordá transferir <strong>{fp(trackOrder.total + trackOrder.delivery_fee)}</strong> al alias <strong>{MP_ALIAS}</strong> antes de que llegue el repartidor.
+              </div>
+            )}
+
             <div style={S.card}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div><div style={{ fontWeight: 800, fontSize: 17 }}>{trackOrder.id}</div><div style={{ fontSize: 12, color: "#64748b" }}>📍 {trackOrder.address}</div></div>
                 <Badge status={trackOrder.status} />
               </div>
-              {["picked","delivering"].includes(trackOrder.status) && (
+              {["picked","delivering"].includes(trackOrder.status) && trackOrder.delivery_phone && trackOrder.pay_method !== "Débito" && (
                 <div style={{ marginBottom: 12 }}>
                   <WaButton phone={trackOrder.delivery_phone} msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `} label="💬 Contactar repartidor" />
                 </div>
@@ -575,7 +697,10 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
                 <span style={{ fontWeight: 800 }}>Total</span><span style={{ fontWeight: 900, color: C.primary }}>{fp(trackOrder.total + trackOrder.delivery_fee)}</span>
               </div>
-              <div style={{ marginTop: 8, padding: "8px 12px", background: "#1a0505", borderRadius: 10, fontSize: 13, color: "#64748b" }}>💳 Pago: {trackOrder.pay_method}</div>
+              <div style={{ marginTop: 8, padding: "8px 12px", background: "#1a0505", borderRadius: 10, fontSize: 13, color: "#64748b" }}>
+                💳 Pago: {trackOrder.pay_method}
+                {trackOrder.pay_method === "Débito" && <span style={{ color: "#009ee3", marginLeft: 6 }}>· Alias: {MP_ALIAS}</span>}
+              </div>
             </div>
             <button onClick={() => setScreen("home")} style={{ ...S.btn(C.border), width: "100%", padding: 14, fontSize: 15 }}>← Volver al inicio</button>
           </>
@@ -834,7 +959,10 @@ function RestaurantView({ user, profile, onLogout }) {
                     <div>
                       <div style={{ fontWeight: 800, fontSize: 17 }}>{order.id}</div>
                       <div style={{ fontSize: 13, color: "#64748b" }}>📍 {order.address}</div>
-                      <div style={{ fontSize: 12, color: "#64748b" }}>💳 {order.pay_method}</div>
+                      <div style={{ fontSize: 12, color: "#64748b", display: "flex", alignItems: "center", gap: 6 }}>
+                        💳 {order.pay_method}
+                        {order.pay_method === "Débito" && <span style={{ color: "#009ee3", fontWeight: 700 }}>· MP {MP_ALIAS}</span>}
+                      </div>
                     </div>
                     <Badge status={order.status} />
                   </div>
@@ -934,13 +1062,13 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
   const [myDeliveries, setMyDeliveries] = useState([]);
   const [feeInput, setFeeInput] = useState({});
   const [loading, setLoading] = useState(true);
-  const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "", mp_link: initialProfile?.mp_link || "" });
+  const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
 
   const saveProfile = async () => {
     setSavingProfile(true);
-    const updates = { name: profileForm.name, phone: profileForm.phone, mp_link: profileForm.mp_link };
+    const updates = { name: profileForm.name, phone: profileForm.phone };
     const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
     if (error) setProfileMsg("❌ Error: " + error.message);
     else { setProfile(p => ({ ...p, ...updates })); setProfileMsg("✅ Perfil actualizado"); }
@@ -1010,10 +1138,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
             <label style={S.label}>Nombre</label>
             <input value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} style={{ ...S.input, marginBottom: 14 }} />
             <label style={S.label}>Teléfono</label>
-            <input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 14 }} />
-            <label style={S.label}>Link de MercadoPago</label>
-            <input value={profileForm.mp_link} onChange={e => setProfileForm(p => ({ ...p, mp_link: e.target.value }))} placeholder="Ej: juan.garcia.mp" style={{ ...S.input, marginBottom: 8 }} />
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 20, lineHeight: 1.6 }}>💡 Los clientes que paguen con débito recibirán este link.</div>
+            <input value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} placeholder="+54 11 1234-5678" style={{ ...S.input, marginBottom: 20 }} />
             <SaveMsg msg={profileMsg} />
             <button onClick={saveProfile} disabled={savingProfile} style={{ width: "100%", background: savingProfile ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
               {savingProfile ? "Guardando..." : "💾 Guardar cambios"}
@@ -1035,12 +1160,6 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                 </div>
               ))}
             </div>
-            {!profile?.mp_link && (
-              <div onClick={() => setTab("profile")} style={{ background: C.primary + "22", border: `1px solid ${C.primary}`, borderRadius: 12, padding: 14, marginBottom: 16, cursor: "pointer" }}>
-                <div style={{ fontWeight: 700, color: C.primary }}>⚠️ Configurá tu link de MercadoPago</div>
-                <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>Tocá acá para agregar tu link de cobro.</div>
-              </div>
-            )}
             {orders.length > 0 && (
               <>
                 <div style={{ fontSize: 12, color: C.primary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>📦 Listos para retirar</div>
@@ -1050,13 +1169,21 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       <div>
                         <div style={{ fontWeight: 800 }}>{order.id}</div>
                         <div style={{ fontSize: 13, color: "#64748b" }}>📍 {order.address}</div>
-                        <div style={{ fontSize: 13, color: "#64748b" }}>💳 {order.pay_method} · {fp(order.total)}</div>
+                        <div style={{ fontSize: 13, color: order.pay_method === "Débito" ? "#009ee3" : "#64748b", fontWeight: order.pay_method === "Débito" ? 700 : 400 }}>
+                          💳 {order.pay_method} · {fp(order.total)}
+                          {order.pay_method === "Débito" && " · MP"}
+                        </div>
                       </div>
                       <Badge status={order.status} />
                     </div>
                     <div style={{ marginBottom: 12 }}>
                       {order.items?.map((item, i) => <div key={i} style={{ fontSize: 13, color: "#64748b" }}>x{item.qty} {item.name}</div>)}
                     </div>
+                    {order.pay_method === "Débito" && (
+                      <div style={{ background: "#009ee311", border: "1px solid #009ee344", borderRadius: 10, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#009ee3" }}>
+                        💳 El cliente debe transferir por MercadoPago antes de la entrega. Pedile el comprobante por WhatsApp al llegar.
+                      </div>
+                    )}
                     <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
                       <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>💰 Tu cargo de envío:</div>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1080,17 +1207,38 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       <div>
                         <div style={{ fontWeight: 800 }}>{order.id}</div>
                         <div style={{ fontSize: 14, color: C.accent, fontWeight: 700 }}>📍 {order.address}</div>
-                        <div style={{ fontSize: 13, color: "#64748b" }}>💰 Cobrar: <strong style={{ color: "#f1f5f9" }}>{fp(order.total + order.delivery_fee)}</strong> ({order.pay_method})</div>
+                        <div style={{ fontSize: 13, color: "#64748b" }}>
+                          💰 Cobrar: <strong style={{ color: order.pay_method === "Débito" ? "#009ee3" : "#f1f5f9" }}>{fp(order.total + order.delivery_fee)}</strong> ({order.pay_method})
+                        </div>
                         <div style={{ fontSize: 12, color: "#64748b" }}>Tu cargo: {fp(order.delivery_fee)}</div>
                       </div>
                       <Badge status={order.status} />
                     </div>
+
+                    {/* AVISO MP para repartidor */}
+                    {order.pay_method === "Débito" && (
+                      <div style={{ background: "#009ee311", border: "1px solid #009ee366", borderRadius: 12, padding: "10px 14px", marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, color: "#009ee3", fontSize: 13, marginBottom: 6 }}>💳 Pago por MercadoPago</div>
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 10, lineHeight: 1.5 }}>
+                          El cliente transfirió al alias <strong style={{ color: "#009ee3" }}>{MP_ALIAS}</strong>. Pedile el comprobante al llegar.
+                        </div>
+                        <WaButton
+                          phone={order.client_phone}
+                          msg={`Hola! Soy tu repartidor del pedido ${order.id}. Estoy llegando, por favor enviame el comprobante de la transferencia de ${fp(order.total + order.delivery_fee)} al alias ${MP_ALIAS}. ¡Gracias!`}
+                          label="📎 Pedir comprobante"
+                          style={{ background: "#009ee3", fontSize: 13 }}
+                        />
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", gap: 8 }}>
                       {order.status === "picked" && <button onClick={() => updateStatus(order.id, "delivering")} style={{ ...S.btn(C.primary), flex: 1 }}>📍 Saliendo hacia cliente</button>}
                       {order.status === "delivering" && <button onClick={() => updateStatus(order.id, "delivered")} style={{ ...S.btn("#10b981"), flex: 1 }}>✅ Confirmar entrega</button>}
                     </div>
                     <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                      <WaButton phone={order.client_phone} msg={`Hola! Soy tu repartidor del pedido ${order.id}. `} label="💬 Contactar cliente" />
+                      {order.pay_method !== "Débito" && (
+                        <WaButton phone={order.client_phone} msg={`Hola! Soy tu repartidor del pedido ${order.id}. `} label="💬 Contactar cliente" />
+                      )}
                       <WaButton phone={order.restaurant_phone} msg={`Hola! Soy el repartidor del pedido ${order.id}. `} label="💬 Contactar restaurante" />
                     </div>
                   </div>
@@ -1113,7 +1261,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       <span style={{ fontWeight: 700 }}>{order.id}</span>
                       <span style={{ color: "#10b981", fontWeight: 800 }}>+{fp(order.delivery_fee)}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{order.address}</div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{order.address} · {order.pay_method}</div>
                   </div>
                 ))}
               </>
@@ -1210,10 +1358,9 @@ function AdminView({ onLogout }) {
           ))}
         </div>
 
-        {/* COMISIÓN */}
         <div style={{ ...S.card, border: `1px solid ${C.accent}55`, marginBottom: 20 }}>
           <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14, color: C.accent }}>💰 Comisión de la plataforma</div>
-          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Este porcentaje se descuenta del total de cada pedido. Los restaurantes ven el monto neto que reciben.</div>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Este porcentaje se descuenta del total de cada pedido.</div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <div style={{ position: "relative", flex: 1 }}>
               <input type="number" value={commissionRate} onChange={e => setCommissionRate(e.target.value)} min="0" max="100" step="0.5" style={{ ...S.input, paddingRight: 40 }} />
@@ -1234,7 +1381,6 @@ function AdminView({ onLogout }) {
 
         {loading ? <Spinner /> : (
           <>
-            {/* TAB RESTAURANTES */}
             {tab === "restaurants" && (
               <>
                 {pending.length > 0 && (
@@ -1281,7 +1427,6 @@ function AdminView({ onLogout }) {
               </>
             )}
 
-            {/* TAB REPARTIDORES */}
             {tab === "delivery" && (
               <>
                 {pendingDelivery.length > 0 && (
@@ -1314,7 +1459,6 @@ function AdminView({ onLogout }) {
                           <div>
                             <div style={{ fontWeight: 700 }}>🛵 {u.name}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>{u.phone || "Sin teléfono"}</div>
-                            {u.mp_link && <div style={{ fontSize: 12, color: "#06b6d4" }}>💳 {u.mp_link}</div>}
                           </div>
                           <button onClick={() => approveDelivery(u.id, false)} style={S.btn("#ef4444")}>Suspender</button>
                         </div>
@@ -1331,7 +1475,6 @@ function AdminView({ onLogout }) {
               </>
             )}
 
-            {/* TAB USUARIOS */}
             {tab === "users" && (
               <>
                 {[["client","👤 Clientes"],["restaurant","🍽️ Restaurantes"],["delivery","🛵 Repartidores"]].map(([role, label]) => {
@@ -1345,7 +1488,6 @@ function AdminView({ onLogout }) {
                           <div>
                             <div style={{ fontWeight: 700 }}>{u.name}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>{u.phone || "Sin teléfono"}</div>
-                            {u.mp_link && <div style={{ fontSize: 12, color: "#06b6d4", marginTop: 2 }}>💳 {u.mp_link}</div>}
                           </div>
                           <div style={{ textAlign: "right" }}>
                             <div style={{ fontSize: 11, color: "#475569" }}>{new Date(u.created_at).toLocaleDateString("es-AR")}</div>
