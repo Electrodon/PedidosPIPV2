@@ -430,11 +430,6 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                   </div>
                 ))}
               </div>
-              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>Subtotal</span><span>{fp(cartTotal)}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}><span>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}><span>Total</span><span style={{ color: C.primary }}>{fp(totalConServicio)}</span></div>
-              </div>
               <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>📍 {address} · 💳 {payMethod}</div>
               {payMethod === "Débito" && (
                 <div style={{ marginTop: 10, background: "#009ee311", border: "1px solid #009ee344", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#009ee3" }}>
@@ -442,7 +437,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </div>
               )}
             </div>
-          }
+            }
           confirmLabel={`Pedir — ${fp(totalConServicio)}`}
           onConfirm={placeOrder}
           onCancel={() => setShowConfirmOrder(false)}
