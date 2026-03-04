@@ -6,6 +6,7 @@ const APP_NAME = "Gulita";
 const SERVICE_FEE = 500;
 const MP_ALIAS = "pili.mp";
 
+
 const C = {
   primary: "#cc1f1f",
   primaryDark: "#a81515",
