@@ -206,6 +206,45 @@ function MercadoPagoModal({ total, onConfirm, onCancel }) {
 }
 
 // ─────────────────────────────────────────────
+// TERMS
+// ─────────────────────────────────────────────
+const TERMS_TEXT = [
+  { title: "1. USO DE LA PLATAFORMA", body: "Gulita es una plataforma que conecta clientes, restaurantes y repartidores independientes. El uso del servicio implica la aceptacion de estos terminos." },
+  { title: "2. REPARTIDORES", body: "Los repartidores operan como trabajadores independientes y no tienen relacion de dependencia con Gulita. Son responsables de contar con los seguros y habilitaciones necesarias para realizar entregas." },
+  { title: "3. RESTAURANTES", body: "Los restaurantes son responsables de la calidad e inocuidad de los alimentos que ofrecen. Gulita cobra una comision sobre cada pedido segun la tarifa vigente informada en el panel." },
+  { title: "4. PAGOS", body: "Los pagos en efectivo se realizan directamente al repartidor. Los pagos por MercadoPago se realizan al alias pili.mp antes de la entrega. Gulita no se responsabiliza por transferencias incorrectas." },
+  { title: "5. RESPONSABILIDAD", body: "Gulita actua como intermediario tecnologico y no se responsabiliza por demoras, accidentes, perdidas o danos ocurridos durante el proceso de entrega." },
+  { title: "6. SUSPENSION", body: "Gulita se reserva el derecho de suspender cuentas que incumplan estos terminos sin previo aviso." },
+  { title: "7. CONDUCTA Y BUENA FE", body: "Queda estrictamente prohibido realizar pedidos falsos, cancelar pedidos de forma reiterada y maliciosa, o cualquier accion que perjudique el trabajo de los repartidores o restaurantes. Gulita se reserva el derecho de suspender o eliminar permanentemente las cuentas que incurran en conductas de mala fe, incluyendo pero no limitado a: pedidos fraudulentos, direcciones falsas, negativa injustificada de pago, o cualquier intento de estafa hacia repartidores, restaurantes o la plataforma. En casos graves, Gulita podra compartir la informacion del usuario con las autoridades competentes." },
+];
+
+function TermsModal({ onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: C.card, borderRadius: 20, width: "100%", maxWidth: 420, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", maxHeight: "80vh" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <div style={{ fontWeight: 900, fontSize: 16, color: "#f1f5f9" }}>Terminos y Condiciones</div>
+          <button onClick={onClose} style={{ background: C.border, border: "none", color: "#94a3b8", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>X</button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "16px 24px", flex: 1 }}>
+          {TERMS_TEXT.map((s, i) => (
+            <div key={i} style={{ marginBottom: 18 }}>
+              <div style={{ fontWeight: 800, fontSize: 13, color: C.primary, marginBottom: 6 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>{s.body}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "16px 24px", borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────
 function AuthScreen() {
@@ -214,12 +253,15 @@ function AuthScreen() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const handleSubmit = async () => {
     setError(""); setLoading(true);
     try {
       if (mode === "register") {
         if (!form.phone.trim()) throw new Error("El teléfono es obligatorio");
+        if (!acceptedTerms) throw new Error("Debés aceptar los términos y condiciones");
         const { error: e } = await supabase.auth.signUp({
           email: form.email, password: form.password,
           options: { data: { name: form.name, phone: form.phone, role } }
@@ -243,7 +285,7 @@ function AuthScreen() {
       <div style={{ width: "100%", maxWidth: 380, background: C.card, borderRadius: 24, padding: 28, border: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", marginBottom: 24, background: "#1a0505", borderRadius: 12, padding: 4 }}>
           {[["login","Iniciar sesión"],["register","Registrarse"]].map(([key, label]) => (
-            <button key={key} onClick={() => { setMode(key); setError(""); }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: mode === key ? C.primary : "transparent", color: mode === key ? "#fff" : "#64748b", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
+            <button key={key} onClick={() => { setMode(key); setError(""); setAcceptedTerms(false); }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: mode === key ? C.primary : "transparent", color: mode === key ? "#fff" : "#64748b", fontWeight: 800, cursor: "pointer", fontSize: 14, fontFamily: "'Nunito', sans-serif" }}>{label}</button>
           ))}
         </div>
         {mode === "register" && (
@@ -263,7 +305,27 @@ function AuthScreen() {
         <label style={S.label}>Email</label>
         <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="tu@email.com" type="email" style={{ ...S.input, marginBottom: 14 }} />
         <label style={S.label}>Contraseña</label>
-        <input value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" type="password" style={{ ...S.input, marginBottom: 20 }} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+        <input value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" type="password" style={{ ...S.input, marginBottom: mode === "register" ? 16 : 20 }} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+
+        {mode === "register" && (
+          <>
+            {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 20, padding: "12px 14px", background: acceptedTerms ? C.primary + "11" : "#1a0505", border: `1px solid ${acceptedTerms ? C.primary + "44" : C.border}`, borderRadius: 12, cursor: "pointer" }}
+              onClick={() => setAcceptedTerms(p => !p)}>
+              <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${acceptedTerms ? C.primary : "#4a1515"}`, background: acceptedTerms ? C.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, transition: "all 0.2s" }}>
+                {acceptedTerms && <span style={{ color: "#fff", fontSize: 12, fontWeight: 900 }}>✓</span>}
+              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5 }}>
+                Leí y acepto los{" "}
+                <span onClick={e => { e.stopPropagation(); setShowTerms(true); }} style={{ color: C.primary, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>
+                  Términos y Condiciones
+                </span>{" "}
+                de {APP_NAME}
+              </div>
+            </div>
+          </>
+        )}
+
         {error && <SaveMsg msg={error} />}
         <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", background: loading ? C.border : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
           {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
