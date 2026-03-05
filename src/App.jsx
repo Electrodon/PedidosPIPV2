@@ -6,7 +6,6 @@ const APP_NAME = "Gulita";
 const SERVICE_FEE = 500;
 const MP_ALIAS = "pili.mp";
 
-
 const C = {
   primary: "#cc1f1f",
   primaryDark: "#a81515",
@@ -179,14 +178,23 @@ function MercadoPagoModal({ total, onConfirm, onCancel }) {
           </div>
         </div>
 
+        {/* Botón abrir MercadoPago */}
+        <a
+          href={`https://mpago.la/transferir?alias=${MP_ALIAS}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", background: "#009ee3", border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: "pointer", fontFamily: "'Nunito', sans-serif", textDecoration: "none", marginBottom: 10, boxSizing: "border-box" }}>
+          <span style={{ fontSize: 22 }}>💳</span> Abrir MercadoPago
+        </a>
+
         {/* Aviso comprobante */}
-        <div style={{ background: "#25d36622", border: "1px solid #25d36655", borderRadius: 12, padding: "10px 14px", marginBottom: 20, fontSize: 13, color: "#25d366", lineHeight: 1.6 }}>
+        <div style={{ background: "#25d36622", border: "1px solid #25d36655", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#25d366", lineHeight: 1.6 }}>
           📎 Una vez que llegue el repartidor, enviá el comprobante por WhatsApp usando el botón en el seguimiento del pedido.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button onClick={onConfirm} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
-            ✅ Entendido, hacer pedido
+            ✅ Ya transferí, hacer pedido
           </button>
           <button onClick={onCancel} style={{ width: "100%", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 14, padding: 13, color: "#64748b", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
             Volver
@@ -431,6 +439,11 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                   </div>
                 ))}
               </div>
+              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>Subtotal</span><span>{fp(cartTotal)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}><span>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}><span>Total</span><span style={{ color: C.primary }}>{fp(totalConServicio)}</span></div>
+              </div>
               <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>📍 {address} · 💳 {payMethod}</div>
               {payMethod === "Débito" && (
                 <div style={{ marginTop: 10, background: "#009ee311", border: "1px solid #009ee344", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#009ee3" }}>
@@ -438,7 +451,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </div>
               )}
             </div>
-            }
+          }
           confirmLabel={`Pedir — ${fp(totalConServicio)}`}
           onConfirm={placeOrder}
           onCancel={() => setShowConfirmOrder(false)}
@@ -672,15 +685,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               )}
               <ProgressBar status={trackOrder.status} />
               {!["delivered","rejected","cancelled"].includes(trackOrder.status) && (
-                  <div style={{ marginTop: 10 }}>
-                      <WaButton 
-                        phone={trackOrder.restaurant_phone} 
-                        msg={`Hola! Soy el cliente del pedido ${trackOrder.id}. `} 
-                        label="💬 Contactar restaurante" 
-                      />
-                    </div>
-                  )}
-                  <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
+                <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
                   <div style={{ fontSize: 13, color: "#64748b" }}>Tiempo estimado</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: C.primary }}>{trackOrder.prep_time} min</div>
                 </div>
