@@ -1,12 +1,6 @@
 {
-  "name": "RapidoYa - Delivery",
-  "short_name": "RapidoYa",
-  "description": "Tu comida favorita, en tu puerta",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#f97316",
-  "orientation": "portrait-primary",
+  "name": "Gulita",
+  "short_name": "Gulita",
   "icons": [
     {
       "src": "/logo-192.png",
@@ -20,5 +14,9 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "theme_color": "#cc1f1f",
+  "background_color": "#1a0505",
+  "display": "standalone",
+  "start_url": "/"
 }
