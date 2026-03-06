@@ -51,6 +51,7 @@ const Logo = ({ size = 36 }) => (
 const fp = (n) => `$${Number(n).toLocaleString("es-AR")}`;
 
 const STATUS_CONFIG = {
+  waiting_delivery: { label: "Buscando repartidor", color: "#a855f7", icon: "🔍" },
   pending:    { label: "Esperando confirmación", color: "#e8a020", icon: "⏳" },
   accepted:   { label: "Pedido confirmado",       color: "#3b82f6", icon: "✅" },
   preparing:  { label: "En preparación",          color: "#8b5cf6", icon: "👨‍🍳" },
@@ -72,17 +73,17 @@ function Badge({ status }) {
 }
 
 function ProgressBar({ status }) {
-  const steps = ["accepted", "preparing", "ready", "picked", "delivered"];
+  const steps = ["pending", "accepted", "preparing", "ready", "picked", "delivered"];
   const idx = steps.indexOf(status);
-  const pct = status === "pending" ? 0 : Math.round(((idx + 1) / steps.length) * 100);
+  const pct = status === "waiting_delivery" ? 0 : Math.round(((idx + 1) / steps.length) * 100);
   return (
     <div style={{ margin: "12px 0" }}>
       <div style={{ height: 8, background: "#1a0505", borderRadius: 4, overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg,#a81515,#e63030)`, borderRadius: 4, transition: "width 0.6s ease" }} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        {["✅","👨‍🍳","📦","🛵","🎉"].map((icon, i) => (
-          <span key={i} style={{ fontSize: 18, opacity: i <= idx ? 1 : 0.25 }}>{icon}</span>
+        {["🔍","⏳","👨‍🍳","📦","🛵","🎉"].map((icon, i) => (
+          <span key={i} style={{ fontSize: 18, opacity: i <= idx + 1 ? 1 : 0.25 }}>{icon}</span>
         ))}
       </div>
     </div>
@@ -196,7 +197,7 @@ function MercadoPagoModal({ total, onConfirm, onCancel }) {
 
         {/* Aviso comprobante */}
         <div style={{ background: "#25d36622", border: "1px solid #25d36655", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#25d366", lineHeight: 1.6 }}>
-          📎 Enviá el comprobante por WhatsApp haciendo click en el botón superior
+          📎 Una vez que llegue el repartidor, enviá el comprobante por WhatsApp usando el botón en el seguimiento del pedido.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -451,7 +452,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
     const { data, error } = await supabase.from("orders").insert({
       client_id: user.id, restaurant_id: selectedRest.id,
       items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, price: c.price })),
-      total: cartTotal, delivery_fee: serviceFee, address, pay_method: payMethod, status: "pending",
+      total: cartTotal, delivery_fee: serviceFee, address, pay_method: payMethod, status: "waiting_delivery",
       client_phone: profile?.phone, restaurant_phone: restProfile?.phone,
     }).select().single();
     if (error) { alert("Error al crear pedido: " + error.message); return; }
@@ -604,7 +605,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 <ProgressBar status={o.status} />
               </div>
             ))}
-          
+
             {loading ? <Spinner /> : filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={60} /><div style={{ marginTop: 12 }}>No hay restaurantes disponibles aún</div></div>
             ) : filtered.map(rest => (
@@ -754,13 +755,20 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 </div>
               )}
               <ProgressBar status={trackOrder.status} />
-              {!["delivered","rejected","cancelled"].includes(trackOrder.status) && (
+              {trackOrder.status === "waiting_delivery" && (
+                <div style={{ background: "#a855f711", border: "1px solid #a855f744", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>🔍</div>
+                  <div style={{ fontWeight: 700, color: "#a855f7", fontSize: 14 }}>Buscando repartidor disponible...</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Tu pedido será enviado al restaurante cuando un repartidor lo acepte</div>
+                </div>
+              )}
+            {!["waiting_delivery","delivered","rejected","cancelled"].includes(trackOrder.status) && (
                 <div style={{ background: "#1a0505", borderRadius: 12, padding: 14, textAlign: "center", marginTop: 8 }}>
                   <div style={{ fontSize: 13, color: "#64748b" }}>Tiempo estimado</div>
                   <div style={{ fontSize: 32, fontWeight: 900, color: C.primary }}>{trackOrder.prep_time} min</div>
                 </div>
               )}
-              {trackOrder.status === "pending" && (
+              {["waiting_delivery","pending"].includes(trackOrder.status) && (
                 <button onClick={() => setShowCancelConfirm(true)} style={{ ...S.btn("#ef4444"), width: "100%", marginTop: 14, padding: 12, fontSize: 14 }}>🚫 Cancelar pedido</button>
               )}
             </div>
@@ -1160,7 +1168,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
 
   useEffect(() => {
     const load = async () => {
-      const { data: ready } = await supabase.from("orders").select("*").eq("status", "ready").is("delivery_id", null);
+      const { data: ready } = await supabase.from("orders").select("*").eq("status", "waiting_delivery").is("delivery_id", null);
       const { data: mine } = await supabase.from("orders").select("*").eq("delivery_id", user.id).order("created_at", { ascending: false });
       const { data: feeConfig } = await supabase.from("app_config").select("value").eq("key", "delivery_fee").single();
       const fee = feeConfig ? parseInt(feeConfig.value) : 500;
@@ -1170,7 +1178,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
     const channel = supabase.channel("delivery-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
         const o = payload.new;
-        if (o.status === "ready" && !o.delivery_id) {
+        if (o.status === "waiting_delivery" && !o.delivery_id) {
           setOrders(prev => prev.find(x => x.id === o.id) ? prev.map(x => x.id === o.id ? o : x) : [o, ...prev]);
         } else {
           setOrders(prev => prev.filter(x => x.id !== o.id));
@@ -1183,7 +1191,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
   }, [user.id]);
 
   const acceptDelivery = async (order) => {
-    await supabase.from("orders").update({ status: "picked", delivery_id: user.id, delivery_fee: globalFee, delivery_phone: profile?.phone }).eq("id", order.id);
+    await supabase.from("orders").update({ status: "pending", delivery_id: user.id, delivery_fee: globalFee, delivery_phone: profile?.phone }).eq("id", order.id);
   };
 
   const updateStatus = async (id, status) => { await supabase.from("orders").update({ status }).eq("id", id); };
@@ -1245,7 +1253,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
             </div>
             {orders.length > 0 && (
               <>
-                <div style={{ fontSize: 12, color: C.primary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>📦 Listos para retirar</div>
+                <div style={{ fontSize: 12, color: C.primary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>🔍 Nuevos pedidos sin repartidor</div>
                 {orders.map(order => (
                   <div key={order.id} style={{ ...S.card, border: `1px solid ${C.primary}44` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -1264,7 +1272,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                     </div>
                     {order.pay_method === "Débito" && (
                       <div style={{ background: "#009ee311", border: "1px solid #009ee344", borderRadius: 10, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#009ee3" }}>
-                        💳 El cliente debe transferir por MercadoPago antes de la entrega. Pedile el comprobante por WhatsApp al llegar.
+                        💳 Pago por MercadoPago al alias <strong>{MP_ALIAS}</strong>. Pedile el comprobante al llegar.
                       </div>
                     )}
                     <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1278,7 +1286,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                       </div>
                     </div>
                     <button onClick={() => acceptDelivery(order)} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
-                      🛵 Aceptar y retirar
+                      ✅ Aceptar pedido
                     </button>
                   </div>
                 ))}
