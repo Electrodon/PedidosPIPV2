@@ -196,7 +196,7 @@ function MercadoPagoModal({ total, onConfirm, onCancel }) {
 
         {/* Aviso comprobante */}
         <div style={{ background: "#25d36622", border: "1px solid #25d36655", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#25d366", lineHeight: 1.6 }}>
-          📎 Una vez que llegue el repartidor, enviá el comprobante por WhatsApp usando el botón en el seguimiento del pedido.
+          📎 Enviá el comprobante por WhatsApp haciendo click en el botón superior
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -604,11 +604,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 <ProgressBar status={o.status} />
               </div>
             ))}
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
-              {["🍕 Pizzas","🥩 Parrilla","🍣 Japonesa","🍔 Burgers","🥗 Saludable"].map(cat => (
-                <button key={cat} onClick={() => setSearch(cat.split(" ")[1])} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: "8px 16px", color: "#94a3b8", cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>{cat}</button>
-              ))}
-            </div>
+          
             {loading ? <Spinner /> : filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={60} /><div style={{ marginTop: 12 }}>No hay restaurantes disponibles aún</div></div>
             ) : filtered.map(rest => (
