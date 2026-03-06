@@ -3,8 +3,8 @@ import { supabase } from "./supabase";
 
 const ADMIN_EMAILS = ["cirotonini30@gmail.com", "piligramaglia2@gmail.com"];
 const APP_NAME = "Gulita";
-const SERVICE_FEE = 500;
-const MP_ALIAS = "pili.mp";
+const MP_SUPPORT_PHONE = "3562415514";
+const MP_ALIAS = "gulitasuardi";
 
 const C = {
   primary: "#cc1f1f",
@@ -178,13 +178,20 @@ function MercadoPagoModal({ total, onConfirm, onCancel }) {
           </div>
         </div>
 
-        {/* Botón abrir MercadoPago */}
+        {/* Botones MP + WA soporte */}
         <a
           href={`https://mpago.la/transferir?alias=${MP_ALIAS}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", background: "#009ee3", border: "none", borderRadius: 14, padding: 16, color: "#fff", fontWeight: 900, fontSize: 16, cursor: "pointer", fontFamily: "'Nunito', sans-serif", textDecoration: "none", marginBottom: 10, boxSizing: "border-box" }}>
           <span style={{ fontSize: 22 }}>💳</span> Abrir MercadoPago
+        </a>
+        <a
+          href={`https://wa.me/54${MP_SUPPORT_PHONE}?text=${encodeURIComponent("Hola! Quiero realizar la transferencia del pedido de Gulita. Alias: " + MP_ALIAS)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", background: "#25d366", border: "none", borderRadius: 14, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif", textDecoration: "none", marginBottom: 10, boxSizing: "border-box" }}>
+          <span style={{ fontSize: 20 }}>📲</span> Contactar para transferir
         </a>
 
         {/* Aviso comprobante */}
@@ -384,6 +391,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   const [showConfirmOrder, setShowConfirmOrder] = useState(false);
   const [showMPModal, setShowMPModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [serviceFee, setServiceFee] = useState(500);
 
   const saveProfile = async () => {
     setSavingProfile(true);
@@ -398,6 +406,8 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   useEffect(() => {
     supabase.from("restaurants").select("*").eq("active", true).eq("approved", true)
       .then(({ data }) => { setRestaurants(data || []); setLoading(false); });
+    supabase.from("app_config").select("value").eq("key", "delivery_fee").single()
+      .then(({ data }) => { if (data) setServiceFee(parseInt(data.value)); });
   }, []);
 
   useEffect(() => {
@@ -441,7 +451,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
     const { data, error } = await supabase.from("orders").insert({
       client_id: user.id, restaurant_id: selectedRest.id,
       items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, price: c.price })),
-      total: cartTotal, delivery_fee: SERVICE_FEE, address, pay_method: payMethod, status: "pending",
+      total: cartTotal, delivery_fee: serviceFee, address, pay_method: payMethod, status: "pending",
       client_phone: profile?.phone, restaurant_phone: restProfile?.phone,
     }).select().single();
     if (error) { alert("Error al crear pedido: " + error.message); return; }
@@ -468,7 +478,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
   };
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const totalConServicio = cartTotal + SERVICE_FEE;
+  const totalConServicio = cartTotal + serviceFee;
   const activeOrders = orders.filter(o => !["delivered","rejected","cancelled"].includes(o.status));
   const filtered = restaurants.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -503,7 +513,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               </div>
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}><span>Subtotal</span><span>{fp(cartTotal)}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}><span>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}><span>Cargo por servicio</span><span>{fp(serviceFee)}</span></div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 16 }}><span>Total</span><span style={{ color: C.primary }}>{fp(totalConServicio)}</span></div>
               </div>
               <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>📍 {address} · 💳 {payMethod}</div>
@@ -594,17 +604,24 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
                 <ProgressBar status={o.status} />
               </div>
             ))}
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+              {["🍕 Pizzas","🥩 Parrilla","🍣 Japonesa","🍔 Burgers","🥗 Saludable"].map(cat => (
+                <button key={cat} onClick={() => setSearch(cat.split(" ")[1])} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: "8px 16px", color: "#94a3b8", cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontFamily: "'Nunito', sans-serif" }}>{cat}</button>
+              ))}
+            </div>
             {loading ? <Spinner /> : filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}><Logo size={60} /><div style={{ marginTop: 12 }}>No hay restaurantes disponibles aún</div></div>
             ) : filtered.map(rest => (
-              <div key={rest.id} onClick={() => loadMenu(rest)} style={{ background: C.card, borderRadius: 18, marginBottom: 14, cursor: "pointer", overflow: "hidden", border: `1px solid ${C.border}` }}>
-                <div style={{ background: `linear-gradient(135deg,#3a1010,${C.card})`, height: 100, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  {rest.photo_url ? <img src={rest.photo_url} alt={rest.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ fontSize: 52 }}>{rest.image}</div>}
+              <div key={rest.id} onClick={() => loadMenu(rest)} style={{ background: C.card, borderRadius: 18, marginBottom: 14, cursor: "pointer", overflow: "hidden", border: `1px solid ${C.border}`, display: "flex", alignItems: "stretch", minHeight: 90 }}>
+                <div style={{ width: 90, minHeight: 90, flexShrink: 0, background: `linear-gradient(135deg,#3a1010,${C.card})`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {rest.photo_url ? <img src={rest.photo_url} alt={rest.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ fontSize: 40 }}>{rest.image}</div>}
                 </div>
-                <div style={{ padding: "12px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <div><div style={{ fontWeight: 800, fontSize: 17 }}>{rest.name}</div><div style={{ fontSize: 13, color: "#94a3b8" }}>{rest.category}</div></div>
-                    <div style={{ textAlign: "right" }}><div style={{ color: C.accent, fontWeight: 700 }}>⭐ {rest.rating}</div><div style={{ fontSize: 12, color: "#64748b" }}>{rest.delivery_time}</div></div>
+                <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>{rest.name}</div>
+                  <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>{rest.category}</div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <div style={{ color: C.accent, fontWeight: 700, fontSize: 13 }}>⭐ {rest.rating}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>{rest.delivery_time}</div>
                   </div>
                 </div>
               </div>
@@ -620,7 +637,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
               </div>
               <div style={{ padding: "14px 20px", textAlign: "center" }}>
                 <div style={{ fontWeight: 900, fontSize: 22 }}>{selectedRest.name}</div>
-                <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Cargo de servicio {fp(SERVICE_FEE)}</div>
+                <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>⭐ {selectedRest.rating} · {selectedRest.delivery_time} · Cargo de servicio {fp(serviceFee)}</div>
               </div>
             </div>
             {menuItems.length === 0 ? (
@@ -676,7 +693,7 @@ function ClientView({ user, profile: initialProfile, onLogout }) {
             ))}
             <div style={S.card}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ color: "#94a3b8" }}>Subtotal</span><span>{fp(cartTotal)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}><span style={{ color: "#94a3b8" }}>Cargo por servicio</span><span>{fp(SERVICE_FEE)}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}><span style={{ color: "#94a3b8" }}>Cargo por servicio</span><span>{fp(serviceFee)}</span></div>
               <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 800, fontSize: 18 }}>Total</span>
                 <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>{fp(totalConServicio)}</span>
@@ -795,6 +812,7 @@ function RestaurantView({ user, profile, onLogout }) {
   const [savingRestProfile, setSavingRestProfile] = useState(false);
   const [restProfileMsg, setRestProfileMsg] = useState("");
   const [commissionRate, setCommissionRate] = useState(10);
+  const [restServiceFee, setRestServiceFee] = useState(500);
 
   useEffect(() => {
     const load = async () => {
@@ -822,6 +840,8 @@ function RestaurantView({ user, profile, onLogout }) {
     load();
     supabase.from("app_config").select("value").eq("key", "commission_rate").single()
       .then(({ data }) => { if (data) setCommissionRate(parseFloat(data.value)); });
+    supabase.from("app_config").select("value").eq("key", "delivery_fee").single()
+      .then(({ data }) => { if (data) setRestServiceFee(parseInt(data.value)); });
   }, [user.id]);
 
   const netAmount = (total) => {
@@ -1126,7 +1146,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
   const [tab, setTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [myDeliveries, setMyDeliveries] = useState([]);
-  const [feeInput, setFeeInput] = useState({});
+  const [globalFee, setGlobalFee] = useState(500);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({ name: initialProfile?.name || "", phone: initialProfile?.phone || "" });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -1146,7 +1166,9 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
     const load = async () => {
       const { data: ready } = await supabase.from("orders").select("*").eq("status", "ready").is("delivery_id", null);
       const { data: mine } = await supabase.from("orders").select("*").eq("delivery_id", user.id).order("created_at", { ascending: false });
-      setOrders(ready || []); setMyDeliveries(mine || []); setLoading(false);
+      const { data: feeConfig } = await supabase.from("app_config").select("value").eq("key", "delivery_fee").single();
+      const fee = feeConfig ? parseInt(feeConfig.value) : 500;
+      setOrders(ready || []); setMyDeliveries(mine || []); setGlobalFee(fee); setLoading(false);
     };
     load();
     const channel = supabase.channel("delivery-orders")
@@ -1165,8 +1187,7 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
   }, [user.id]);
 
   const acceptDelivery = async (order) => {
-    const fee = parseInt(feeInput[order.id]) || 500;
-    await supabase.from("orders").update({ status: "picked", delivery_id: user.id, delivery_fee: fee, delivery_phone: profile?.phone }).eq("id", order.id);
+    await supabase.from("orders").update({ status: "picked", delivery_id: user.id, delivery_fee: globalFee, delivery_phone: profile?.phone }).eq("id", order.id);
   };
 
   const updateStatus = async (id, status) => { await supabase.from("orders").update({ status }).eq("id", id); };
@@ -1250,11 +1271,14 @@ function DeliveryView({ user, profile: initialProfile, onLogout }) {
                         💳 El cliente debe transferir por MercadoPago antes de la entrega. Pedile el comprobante por WhatsApp al llegar.
                       </div>
                     )}
-                    <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-                      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>💰 Tu cargo de envío:</div>
-                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <input type="number" value={feeInput[order.id] || ""} onChange={e => setFeeInput(p => ({ ...p, [order.id]: e.target.value }))} placeholder="500" style={{ ...S.input, width: 100, textAlign: "center" }} />
-                        <span style={{ fontSize: 13, color: "#64748b" }}>→ Total: {fp(order.total + (parseInt(feeInput[order.id]) || 500))}</span>
+                    <div style={{ background: "#1a0505", borderRadius: 10, padding: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Cargo de envío</div>
+                        <div style={{ fontWeight: 800, color: "#3b82f6", fontSize: 16 }}>{fp(globalFee)}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 2 }}>Total a cobrar</div>
+                        <div style={{ fontWeight: 800, color: C.primary, fontSize: 16 }}>{fp(order.total + globalFee)}</div>
                       </div>
                     </div>
                     <button onClick={() => acceptDelivery(order)} style={{ width: "100%", background: `linear-gradient(135deg,${C.primary},${C.primaryDark})`, border: "none", borderRadius: 12, padding: 14, color: "#fff", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
@@ -1350,14 +1374,19 @@ function AdminView({ onLogout }) {
   const [commissionRate, setCommissionRate] = useState("10");
   const [savingCommission, setSavingCommission] = useState(false);
   const [commissionMsg, setCommissionMsg] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState("500");
+  const [savingFee, setSavingFee] = useState(false);
+  const [feeMsg, setFeeMsg] = useState("");
 
   useEffect(() => {
     const load = async () => {
       const { data: rests } = await supabase.from("restaurants").select("*, profiles(name, phone)").order("created_at", { ascending: false });
       const { data: profs } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       const { data: config } = await supabase.from("app_config").select("value").eq("key", "commission_rate").single();
+      const { data: feeConfig } = await supabase.from("app_config").select("value").eq("key", "delivery_fee").single();
       setRestaurants(rests || []); setUsers(profs || []);
       if (config) setCommissionRate(config.value);
+      if (feeConfig) setDeliveryFee(feeConfig.value);
       setLoading(false);
     };
     load();
@@ -1367,11 +1396,24 @@ function AdminView({ onLogout }) {
     setSavingCommission(true);
     const val = parseFloat(commissionRate);
     if (isNaN(val) || val < 0 || val > 100) { setCommissionMsg("❌ Valor inválido (0-100)"); setSavingCommission(false); return; }
-    const { error } = await supabase.from("app_config").upsert({ key: "commission_rate", value: String(val), updated_at: new Date().toISOString() });
+    const { error } = await supabase.from("app_config")
+      .upsert({ key: "commission_rate", value: String(val), updated_at: new Date().toISOString() }, { onConflict: "key" });
     if (error) setCommissionMsg("❌ Error: " + error.message);
     else setCommissionMsg("✅ Comisión actualizada a " + val + "%");
     setSavingCommission(false);
     setTimeout(() => setCommissionMsg(""), 3000);
+  };
+
+  const saveDeliveryFee = async () => {
+    setSavingFee(true);
+    const val = parseInt(deliveryFee);
+    if (isNaN(val) || val < 0) { setFeeMsg("❌ Valor inválido"); setSavingFee(false); return; }
+    const { error } = await supabase.from("app_config")
+      .upsert({ key: "delivery_fee", value: String(val), updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) setFeeMsg("❌ Error: " + error.message);
+    else setFeeMsg("✅ Precio de envío actualizado a " + fp(val));
+    setSavingFee(false);
+    setTimeout(() => setFeeMsg(""), 3000);
   };
 
   const approveRestaurant = async (id, approved) => {
@@ -1437,6 +1479,21 @@ function AdminView({ onLogout }) {
             </button>
           </div>
           {commissionMsg && <div style={{ marginTop: 10 }}><SaveMsg msg={commissionMsg} /></div>}
+        </div>
+
+        <div style={{ ...S.card, border: `1px solid #3b82f644`, marginBottom: 20 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 14, color: "#3b82f6" }}>🛵 Precio de envío general</div>
+          <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Este monto se cobra en todos los pedidos como cargo de envío. Se aplica automáticamente a todos los repartidores.</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700 }}>$</span>
+              <input type="number" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} min="0" step="50" style={{ ...S.input, paddingLeft: 30 }} />
+            </div>
+            <button onClick={saveDeliveryFee} disabled={savingFee} style={{ ...S.btn("#3b82f6"), padding: "10px 20px", fontSize: 14 }}>
+              {savingFee ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+          {feeMsg && <div style={{ marginTop: 10 }}><SaveMsg msg={feeMsg} /></div>}
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
